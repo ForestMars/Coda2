@@ -1,0 +1,230 @@
+country,cases,deaths,recovered
+United States,1289235,76537,174697
+Spain,221447,26070,128511
+Italy,215858,29958,96276
+United Kingdom,206715,30615,No data
+Russia,177160,1625,23803
+Germany,169430,7392,135918
+France,137779,25897,55027
+Brazil,135773,9190,55350
+Turkey,133721,3641,82984
+Iran,103135,6486,82744
+China,82886,4633,77993
+Canada,64922,4408,29247
+Peru,58526,1627,18388
+India,56342,1886,16540
+Belgium,51420,8415,12980
+Netherlands,41774,5288,
+Saudi Arabia,33731,219,7798
+Ecuador,30298,1654,3433
+Switzerland,30126,1518,25900
+Mexico,29616,2961,17781
+Portugal,26715,1105,2258
+Pakistan,25837,594,7530
+Sweden,24623,3040,4074
+Chile[n],24581,285,11664
+Ireland,22385,1403,13386
+Singapore,20939,20,1712
+Belarus,20168,116,5067
+Qatar,18890,12,2286
+Israel[o],16381,240,10873
+United Arab Emirates,16240,165,3572
+Austria,15673,609,13698
+Japan[p],15575,590,5146
+Poland,15047,755,4862
+Romania,14499,876,6144
+Ukraine[q],13691,340,2396
+Indonesia,12776,930,2381
+Bangladesh,12425,199,1910
+South Korea,10822,256,9484
+Philippines,10343,685,1618
+Denmark[r],10083,514,7711
+Serbia[s],9848,206,2160
+Dominican Republic,9095,373,2064
+Colombia,8959,397,2148
+South Africa,8232,161,3153
+Norway[t],8034,217,7114
+Czech Republic,8031,270,4371
+Egypt[u],7981,482,1887
+Panama,7868,225,886
+Australia[v],6819,97,6031
+Kuwait,6567,44,2381
+Malaysia,6467,107,4776
+Finland[w],5673,255,3500
+Morocco[x],5548,183,2179
+Argentina[y],5358,282,1588
+Algeria,5182,483,2323
+Moldova[z],4605,145,1747
+Kazakhstan,4578,30,1518
+Bahrain,4199,8,2000
+Luxembourg,3859,100,3505
+Afghanistan,3563,106,468
+Nigeria,3526,107,601
+Hungary,3178,392,865
+Ghana,3091,18,303
+Thailand,2992,55,2761
+Oman,2958,15,960
+Armenia,2884,42,1185
+Greece,2678,148,1374
+Iraq,2543,102,1626
+Uzbekistan,2298,10,1656
+Cameroon,2267,108,1221
+Azerbaijan[aa],2204,28,1551
+Croatia,2125,86,1641
+Bolivia,2081,102,219
+Puerto Rico,2031,102,No data
+Bosnia & Herzegovina,2027,90,954
+Guinea,1927,11,629
+Bulgaria,1829,84,384
+Iceland,1801,10,1755
+Cuba[ab],1729,73,1031
+Estonia,1720,56,273
+Honduras,1685,105,154
+North Macedonia,1572,89,1079
+Ivory Coast,1571,20,742
+Senegal,1492,13,562
+New Zealand,1490,21,1347
+Slovenia,1449,99,247
+Slovakia,1445,26,806
+Lithuania,1433,49,739
+Djibouti,1133,3,799
+USS Theodore Roosevelt[ac],1102,1,53
+Charles de Gaulle[ad],1081,0,0
+Hong Kong,1045,4,944
+Tunisia,1026,44,600
+Sudan,930,52,92
+Somalia[ae],928,44,106
+Latvia,909,18,464
+Kyrgyzstan,895,12,637
+Cyprus[af],889,15,400
+DR Congo[ag],863,36,103
+Kosovo,861,27,562
+Albania,842,31,605
+Sri Lanka,824,9,232
+Guatemala,798,21,86
+Lebanon,784,25,220
+Niger,781,42,586
+Costa Rica,765,6,445
+Andorra,752,47,526
+Burkina Faso,736,48,562
+Diamond Princess[p],712,13,651
+El Salvador,695,15,245
+Uruguay[ah],684,17,482
+Mali,650,32,271
+Maldives,648,3,20
+San Marino,622,41,106
+Georgia[ai],615,9,275
+Kenya,607,29,197
+Guinea-Bissau,564,2,25
+Gabon,504,8,110
+Jordan,494,9,381
+Jamaica,488,9,58
+Malta,486,5,413
+Tanzania,480,16,167
+Paraguay,462,10,148
+Tajikistan,461,12,246
+Taiwan[aj],440,6,347
+Equatorial Guinea,439,4,13
+Venezuela,381,10,185
+Palestine,375,4,224
+Mauritius,332,10,320
+Isle of Man[ak],329,23,271
+Montenegro,324,8,265
+Jersey,293,25,207
+Vietnam,288,0,233
+Rwanda,271,0,133
+Congo[al],264,10,30
+Chad,253,27,50
+Guernsey,252,13,223
+Sierra Leone,231,16,54
+Cape Verde,218,2,38
+Madagascar,193,0,101
+Ethiopia,191,4,93
+Liberia,189,20,79
+São Tomé & Príncipe,187,4,4
+Faroe Islands,187,0,185
+Luhansk PR[am],162,1,12
+Myanmar,176,6,62
+Eswatini,153,2,12
+Zambia,153,4,101
+Guam[ac],149,5,128
+Costa Atlantica,148,0,0
+Gibraltar,144,0,141
+Donetsk PR[am],142,4,17
+Brunei,141,1,131
+Benin,140,2,53
+Togo,135,9,85
+Haiti,129,12,16
+Greg Mortimer[ah],128,0,
+Cambodia,122,0,120
+Bermuda,118,7,61
+Trinidad & Tobago,116,8,103
+Northern Cyprus[an],108,4,103
+Aruba,101,3,89
+Nepal,101,0,19
+Uganda,101,0,55
+Monaco,95,4,82
+Central African Republic,94,0,10
+Guyana,93,10,34
+Bahamas,92,11,26
+Liechtenstein,82,1,55
+Barbados,82,7,47
+Mozambique,81,0,24
+MV Artania,81,0,4
+Cayman Islands,80,1,35
+USS Kidd,78,0,0
+Sint Maarten,76,14,46
+South Sudan,74,0,0
+U.S. Virgin Islands,66,4,54
+Libya,64,3,24
+French Polynesia,60,0,56
+Macau,45,0,40
+Syria[ao],45,3,27
+Malawi,43,3,14
+Mongolia,41,0,13
+Eritrea,39,0,26
+Angola,36,2,11
+Zimbabwe,34,4,5
+Yemen,25,5,1
+Antigua & Barbuda,24,3,11
+East Timor,24,0,16
+Botswana,23,1,9
+Grenada,21,0,13
+Laos,19,0,9
+Belize,18,2,16
+Fiji,18,0,14
+New Caledonia,18,0,18
+Saint Lucia,18,0,17
+Saint Vincent[ap],17,0,9
+The Gambia,17,1,9
+Curaçao,16,1,14
+Dominica,16,0,14
+Namibia,16,0,9
+Nicaragua,16,5,7
+Burundi,15,1,7
+Northern Mariana Islands,15,2,12
+Saint Kitts & Nevis,15,0,12
+Falkland Islands,13,0,13
+MS Zaandam[aq],13,4,
+Coral Princess[ar],12,2,
+Turks & Caicos Islands,12,1,6
+Vatican City,12,0,2
+Greenland,11,0,11
+Montserrat,11,1,6
+Seychelles,11,0,7
+Artsakh[as],10,0,6
+Suriname,10,1,9
+Comoros,8,1,0
+HNLMS Dolfijn[at],8,0,
+Mauritania,8,1,6
+Papua New Guinea,8,0,8
+Bhutan,7,0,5
+British Virgin Islands,7,1,3
+Somaliland[au],6,0,1
+Abkhazia[av],3,1,2
+Anguilla,3,0,3
+South Ossetia[aw],3,0,0
+Bonaire,2,0,2
+Saba,2,0,1
+Sint Eustatius,2,0,2
+Saint Pierre & Miquelon,1,0,0

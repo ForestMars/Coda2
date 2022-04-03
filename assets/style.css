@@ -1,0 +1,255 @@
+a {
+  color: #203;
+}
+
+a:hover {
+  color: #203;
+}
+
+
+table.diplay {
+    width: 60%;
+    margin: 0; 
+    margin-left: 0; 
+}
+
+
+.Select-control {
+margin: 0;
+padding: 2px;
+line-height: 12px;
+background-color: #fdfdfd; 
+position: relative;
+display: table;
+vertical-align: middle;
+}
+
+#single_region_dropdown .Select-control {
+  background: #AA0 !important;
+  cursor: .url {cursor: url(covid.cur),auto;};
+}
+
+#single_region_dropdown .Select-placeholder {
+  color: #222 !important;
+  cursor: url(covid32.cur),auto;} !important;
+}
+
+/*
+#drycontent .infolayer [class^='y'][class$='title'] {
+  transform: rotate(180deg) translate(20px, 0px);
+  font-weight: bold !important; 
+}
+*/
+
+#model_ .infolayer [class^='y'][class$='title'] {
+  transform: rotate(-90deg) translate(-17vw, -10vw  px) ;
+}
+
+body {
+#background-color: #f4f4f2; 
+background-color: #546607; 
+}
+
+
+
+#drycontent {
+  margin-left: 50px;
+  margin-right: 50px;
+}
+
+#main-content {
+  background-color:#aa00a0 !important;
+}
+
+#inner-div {
+  background-color:#aa00a0 !important;
+}
+
+#main-title {
+  vertical-align: bottom;
+  padding-bottom: 0; 
+  
+}
+
+#main-title h2 {
+  margin-top: 0;
+  margin-bottom: 0 !important;
+  color: #d8d8c4;
+  letter-spacing: .10em;
+  line-height: 40px; 
+  padding-bottom: 0 !important;
+
+  
+}
+
+#maindiv {
+  background-color: #f4f4f2 !important; 
+  vertical-align: top;
+  padding-bottom: 0; 
+  padding:0;
+  
+  
+}
+
+#themenu {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  
+}
+
+#spread h4 {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+#index {
+margin-top: 20px !important;
+}
+
+#drycontent {
+margin-top: 20px !important;
+}
+
+#qa_input {
+  width: 65vw !important;
+}
+
+@font-face {
+  font-family: FranklinG;
+  src: url(./fonts/gothic/FranklinGothic.ttf);
+}
+@font-face {
+  font-family: FrankGo;
+  src: url(./fonts/gothic/FRANKGO.ttf);
+}
+@font-face {
+  font-family: fgwo;
+  src: url(./fonts/gothic/fgwo.ttf);
+}
+
+@font-face {
+  font-family: Elena;
+  src: url(./fonts/elena/elena-regular.tff);
+}
+
+@font-face {
+  font-family: Gill-sans;
+  src: url(./fonts/gillsans/ABeeZee-Regular.ttf);
+}
+@font-face {
+  font-family: OSC;
+  src: url(./fonts/Open_Sans_Condensed/OpenSansCondensed-Light.tff);
+}
+@font-face {
+  font-family: Studio-Gothic-Bold;
+  src: url(./fonts/studio/Studio-Gothic-Bold-trial.ttf);
+}
+
+
+@font-face {
+  font-family: GoetheGothic;
+  src: url(./fonts/GoetheGothic.ttf);
+}
+@font-face {
+  font-family: GoetheBold;
+  src: url(./fonts/GoetheGothicBold.ttf);
+}
+@font-face {
+  font-family: Momcake-bold;
+  src: url(./fonts/MOMCAKE-Bold.otf);
+}
+@font-face {
+  font-family: Albret;
+  src: url(./fonts/Albret.ttf);
+}
+@font-face {
+  font-family: Cocogoose-Classic-Medium-trial;
+  src: url(./fonts/Cocogoose-Classic-Medium-trial.ttf);
+}
+@font-face {
+  font-family: fira-sans;
+  src: url(./fonts/fira-sans/FiraSans-Regular.otf);
+}
+@font-face {
+  font-family: Undeka;
+  src: url(./fonts/undeka/Undeka-Regular.woff);
+}
+
+
+@font-face {
+  font-family: Alright-Sans;
+  src: url(./elena-regular.woff);
+}
+
+/*
+.Select-control {
+font-weight: 200;
+font-size: 14px;
+line-height: 12px;
+margin: 0;
+padding: 8px;
+background-color: #fdfdfd; 
+position: relative;
+display: inline-block;
+width: 80vw !important;
+vertical-align: middle;
+*/
+
+/*
+.dash-dropdown {
+font-weight: 200;
+font-size: 14px;
+line-height: 12px;
+color: #ff0000 !important;
+margin: 0;
+padding: 8px;
+background: #ff0000 !important;
+background-color: #ff0000 !important; 
+position: relative;
+display: inline-block;
+width: 130px !important;
+vertical-align: middle;
+*/
+
+/*
+#region_dropdown {
+font-weight: 200;
+font-size: 14px;
+line-height: 12px;
+color: #ff0000 !important;
+margin: 0;
+padding: 8px;
+background: #ff0000 !important;
+background-color: #ff0000 !important; 
+position: relative;
+display: inline-block;
+width: 130px !important;
+vertical-align: middle;
+*/
+
+/*
+  #data-field-dropdown .Select-control {
+margin: 0;
+margin-top: 0;
+padding: 2px;
+line-height: 12px;
+background-color: #fdfdfd; 
+position: relative;
+display: table;
+width: 25vw !important;
+vertical-align: middle;
+}
+
+
+#dataset-1-dropdown .Select-control {
+margin: 0;
+margin-top: 0;
+padding: 2px;
+line-height: 12px;
+background-color: #fdfdfd; 
+position: relative;
+display: table;
+width: 25vw !important;
+vertical-align: middle;
+}
+*/
