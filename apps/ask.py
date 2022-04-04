@@ -3,54 +3,31 @@ print("=========================LOADING ASK")
 __version__ = '0.1'
 __all__ = ['layout', 'callback']
 
-#import collections
-#import json
-import os
-#import pickle
 
-#from datetime import datetime
-#from pathlib import Path
-#import requests as req
+import os
+
 import pandas as pd
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-
-#from spacy import displacy
-#from collections import Counter
-#from get_args import get_args # (needed to run as standalone module.)
-#from lib.modules import *
-#from lib.utils import * # no longer needed.
-import data_loader
-import dashit
-#from style import *
-from app import app
-import assets.footer as footer
-
-#from dateutil.parser import parse as dparse
 from dateparser.search import search_dates
 
-# tmp @FIXME
-#from lib.nlp import qa
+from app import app
+import assets.footer as footer
+import dashit
+import data_loader
+
 from build.src import qa
 
+
 df = pd.read_csv(data_loader.DATASET2, parse_dates=['dateRep'], infer_datetime_format=True)
-#z = pd.read_csv('file.csv', parse_dates=True, index_col="Date", usecols=["Date",], names=["Date", "O", "C"], header=0)
 df.rename(columns = {'dateRep':'date', 'countriesAndTerritories':'nation'}, inplace = True)
 
-#question = "How many people died in April?"
-
-#nlp = en_core_web_sm.load()
-#doc = nlp(question)
-#print([(X.text, X.label_) for X in doc.ents])
-
-#qa_text = "How many peopled died last July?"
-#qa_date = 'last july'
-#qa_region = ''
-#qa_confirmed = ''
 
 def sent_parser(qa_text):
-    # if sents > 1:
+    """ Limits inquiries to 1 question at a time. Does catch compound questions. """
+    q_num = qa.text.count('?')
+    if q_num > 1:
         return "I can answer all your questions, but please ask them one at a time."
 
 def ex_date(qa_date):
@@ -84,7 +61,7 @@ except Exception as e:
 # I miss Jade.
 def get_layout():
     # title = 'Time Series Plot', hovermode = 'closest'
-    print("========= get layout fired")
+    print("========= ASK get layout fired")
     app.layout = html.Div([
         html.Div(
             style = {'padding-left': '25px', 'padding-right': '25px', 'backgroundColor': '#aa0'},

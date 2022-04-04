@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # predict.py - module for predicting incidence
 breakpoint()
+print("=========================LOADING PREDICT")
 __version__ = '0.2'
 __all__ = ['get_layout'] # Some apps export layout as var and some expose as functon. Does it makes sense to support both?  @Question
 
@@ -175,6 +176,8 @@ def get_layout():
 
 layout = get_layout()
 
+# inputs must exist as element id's in Layout
+# if that's the case, how to be DRY?
 def callback(app):
     @app.callback(
         Output('plot', 'figure'),
@@ -183,6 +186,7 @@ def callback(app):
         Input('train_slider', 'value'),
         Input('y_slider', 'value'),
         ])
+    # (inputs are just passed to decorated inner function as list.)
     def update_figurez(D, region, train_slider, y_slider):
         # Unfortunately, dcc sends a differently typed object if the list only has 1 item. :-(
         # Fortunately, this is a great example of why Duck Typing rocks.

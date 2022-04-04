@@ -151,9 +151,10 @@ class ProcessCTPData():
 
             try:
                 write_f(dir, state, df_.to_csv(index=False))
-                print('wrote', state)
+                # rint('wrote', state)
             except Exception as e:
-                print(e)
+                pass
+                # rint(e) # should be log
 
 
 

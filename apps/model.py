@@ -1,5 +1,6 @@
 # apps/model.py - Pluggable Dataviz module to run and plot a model.
 breakpoint()
+print("=========================LOADING MODEL")
 __vers__ = '0.1'
 __all__ = ['layout', ]
 
@@ -138,9 +139,9 @@ def _generate_table(df):
 
 def time_stepper(EPOCHS, model):
     for e in range(1, EPOCHS):
-        print(e)
+        # print(e)
         getattr(SEIR, model)(e)
-        print(getattr(SEIR, model)(e))
+        # print(getattr(SEIR, model)(e))
     # Get results after time stepping:
     return SEIR.get_seird()
 

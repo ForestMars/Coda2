@@ -2,6 +2,7 @@
 __version__ = '0.1'
 __all__ = ['layout', 'dash_table.DataTable', '_generate_table', 'csv_strong', 'dataset_files', 'dataset_names', 'datasets']
 
+import os
 import urllib.parse # Is this still used?
 
 import dash
@@ -15,21 +16,21 @@ import common.utils as utils
 from common.better_title import better_title
 
 
-## Declarations & Data loading
-
 DATA_DIR = 'Datasets/Global'
 DATA_FILE = 'global_demographic_data.csv'
 DATASET = DATA_DIR + '/' + DATA_FILE
 
 #df = pd.read_csv(DATASET, parse_dates=['date'], infer_datetime_format=True)
-df = pd.read_csv(DATASET)
+if os.path.exists(DATASET):
+    df = pd.read_csv(DATASET)
+
 
 dataset_files = [ dataset for dataset in utils.get_reg_files(DATA_DIR) ]
-dataset_names = [ better_title(dataset.split('.')[0].replace('_',' ').title()) for dataset in utils.get_reg_files(DATA_DIR) ]
+# dataset_names = [ better_title(dataset.split('.')[0].replace('_',' ').title()) for dataset in utils.get_reg_files(DATA_DIR) ]
+dataset_names = [ dataset.split('.')[0].replace('_',' ').title() for dataset in utils.get_reg_files(DATA_DIR) ]
 datasets = dict(zip(dataset_files, dataset_names))
+datasources = {'data:': "data/", 'dataset': "Datasets/"}
 
-
-## Definitions
 
 def _generate_table(df):
     return dash_table.DataTable(
@@ -42,7 +43,6 @@ def _generate_table(df):
         sort_action='native'
         )
 
-## Layout
 
 layout = html.Div([
 
@@ -50,12 +50,21 @@ layout = html.Div([
         html.H4("Dataset Viewer"),
         #html.P("Use links on right to edit, save & download"),
         dcc.Dropdown(
+            id='data-dir-dropdown',
+            options=[
+                {'label': name, 'value': file} for file, name in datasources.items()],
+            placeholder='Select data or datasets',
+            value=DATA_FILE,
+            ),
+
+        dcc.Dropdown(
             id='data-field-dropdown',
             options=[
                 {'label': name, 'value': file} for file, name in datasets.items()],
-            placeholder='Select a dataset to view...',
+            placeholder='Select a dataset to view',
             value=DATA_FILE,
             ),
+
         html.Div([
             dcc.Link("Update   ", href="/api/fetch_current_data", title="Check for updates to this data set.", className="p-2 text-dark"),
             dcc.Link("Edit   ", href="/data?edit='True'", title="Edit", className="p-2 text-dark"),
@@ -80,14 +89,13 @@ layout = html.Div([
 )
 
 
-## Callback
-
 def data_callback(app):
 
     @app.callback(
         dash.dependencies.Output('table', 'children'),
         [dash.dependencies.Input('data-field-dropdown', 'value')])
     def update_table(dataset):
+        print("==============data set is ", dataset)
         if dataset is not None:
             df = pd.read_csv(DATA_DIR + '/' + dataset)
             return _generate_table(df)

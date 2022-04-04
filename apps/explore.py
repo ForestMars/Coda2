@@ -1,18 +1,21 @@
 # x-by-y.py - dataviz module for quick X by Y charts.
 __version__ = '0.1'
 __all__ = ['layout', 'callback']
-
+print("=========================LOADING ", __file__)
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 import pandas as pd
 
-from lib.components import x_axis_dropdown, y_axis_dropdown, DATASET, DATA_DIR
+# huh
+from lib.components import x_axis_dropdown, y_axis_dropdown
+from data_loader import DATASET, DATA_DIR
+
 import assets.footer as footer
 
-df = pd.read_csv(DATASET)
-
+# why not DRY
+df = pd.read_csv(DATASET)  # Datasets/Global/global_demographic_data.csvx
 
 layout = html.Div([
     html.Div([ #
@@ -48,11 +51,15 @@ layout = html.Div([
 def callback(app):
 
     @app.callback(
-        Output('x-axis-feature-dropdown', 'options'),
-        [Input('x-axis-dropdown', 'value')])
+        Output( 'x-axis-feature-dropdown', 'options'),
+        [Input('x-axis-dropdown', 'value')] )
     def update_X_dropdown(dataset):
-        print("old 1 fired")
-        df_1 = pd.read_csv(DATA_DIR + '/' + dataset)
+        #df_1 = pd.read_csv(DATA_DIR + '/' + dataset)
+        filepath = DATA_DIR + 'Global/' + dataset
+        print('dataset 1 is')
+        print(dataset)
+        df_1 = pd.read_csv(filepath)
+        #input(df_1.head())
         feature_options = {col:col for col in df_1.columns}
         return [{'label': i, 'value': i} for i in feature_options]
 
@@ -60,7 +67,12 @@ def callback(app):
         Output('y-axis-feature-dropdown', 'options'),
         [Input('y-axis-dropdown', 'value')])
     def update_Y_dropdown(dataset):
-        df_2 = pd.read_csv(DATA_DIR + '/' + dataset)
+        #df_2 = pd.read_csv(DATA_DIR + '/' + dataset)
+        filepath = DATA_DIR + 'Global/' + dataset
+        #print('dataset 2 is')
+        #print(dataset)
+        #print('that was it')
+        df_2 = pd.read_csv(filepath)
         feature_options = {col:col for col in df_2.columns}
         return [{'label': i, 'value': i} for i in feature_options]
 
@@ -73,18 +85,40 @@ def callback(app):
         ])
     def update_figure(xdata, ydata, featx, featy):
         fig=go.Figure()
+        #print(xdata)
+        #print(ydata)
+        #print(featx)
+        #print(featy)
 
         if featx is not None:
-            df1 = pd.read_csv(DATA_DIR + '/' + xdata)
-            df1_drop_cols = [ col for col in df1.columns if col not in ['date', 'country', featx]]
+            filepath = DATA_DIR + 'Global/' + xdata
+            df1 = pd.read_csv(filepath)
+
+            print(DATASET)
+            dff = df1.loc[df1['country'] == 'China']
+            #print(dff)
+            df1_drop_cols = [ col for col in df1.columns if col not in ['date', 'country', featx]]  # kill date
             df1.drop(df1_drop_cols, axis=1, inplace=True)
+            #print(df1)
 
         if featy is not None:
-            df2 = pd.read_csv(DATA_DIR + '/' + ydata)
+            filepath = DATA_DIR + 'Global/' + ydata
+            # df2 = pd.read_csv(filepath, dtype={'population': 'int8'})
+            df2 = pd.read_csv(filepath, thousands=',')
+
+
+            print(df2.info())
+            #print(df2)
             df2_drop_cols = [ col for col in df2.columns if col not in ['country', featy]]
             df2.drop(df2_drop_cols, axis=1, inplace=True)
+            #print(df2)
 
             df = pd.merge(df1, df2, on='country')
+
+            df = df.astype({"population": int})
+            print(df.info())
+            #print(featx)
+            #print(featy)
 
             fig.add_trace(go.Scatter(name='', x = df[featx],  y = df[featy], mode='markers',
                 marker=dict(color='#668866'),
@@ -93,7 +127,7 @@ def callback(app):
                 yaxis = 'y',
                 #hover_data=["population", "first_case"]
             ))
-            fig.update_layout(xaxis_type="log", xaxis_tickformat=",d")
+            fig.update_layout(xaxis_type="log", xaxis_tickformat=".0f", yaxis_tickformat=".0f") # yxis format ??
             fig.update_layout(
                 title={'text': '{} x {} by country'.format(featx, featy),
                 'xanchor':"center",

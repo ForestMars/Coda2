@@ -5,6 +5,9 @@ __version__ = '0.2'
 __all__ = ['WorldData', 'StateData', 'DATA_DIR', 'DATASET', 'DATA_FILE']
 
 import os
+
+import pandas as pd
+
 import common.utils as utils
 from common.better_title import better_title
 #from Datasets.__meta__.state_names import states
@@ -12,18 +15,20 @@ from common.better_title import better_title
 from Datasets.__meta__.nations import big_countries
 
 # @TODO: This is all dynamically loaded
-#DATA_DIR = 'Datasets/USA'
-DATA_DIR = 'Datasets/'
 DATA_AREA = 'Global/' # legacy
+DATA_DIR = 'Datasets/'
+# DATA_DIR = 'Datasets/Global'  # lib.components
 DATA_FILE = 'global_demographic_data.csv' # legacy
-DATA_FILE2 = 'ecdc_covid_data.csv'
 DATASET = DATA_DIR + DATA_AREA + DATA_FILE # legacy
+# DATASET = DATA_DIR + '/' + DATA_FILE                                                        # lib.components
+DATA_FILE2 = 'ecdc_covid_data.csv'
 DATASET2 = DATA_DIR + DATA_AREA + DATA_FILE2 # legacy
 
 # This is naked and needs to find a home (we only load the module once.)
 dataset_dirs = [ data_dir for data_dir in utils.get_sub_dirs(DATA_DIR) ]
 dataset_files = [ dataset for dataset in utils.get_reg_files(DATA_DIR) ]
 dataset_names = [ better_title(dataset.split('.')[0].replace('_',' ').title()) for dataset in utils.get_reg_files(DATA_DIR) ]
+
 datasets = dict(zip(dataset_files, dataset_names))
 
 data_dir = {
@@ -73,4 +78,8 @@ def get_region_data(area: str, region: str) -> str:
     return dataset
 
 if __name__ == '__main__':
-    input(dir('__main__'))
+    df = pd.read_csv(DATASET)
+    print(df.head())
+    print(df.deaths.unique())
+    print(df.recovered.unique())
+    print(df.current_cases.unique())
