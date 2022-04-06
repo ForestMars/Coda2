@@ -20,7 +20,7 @@ import data_loader
 from build.src import qa
 
 
-df = pd.read_csv(data_loader.DATASET2, parse_dates=['dateRep'], infer_datetime_format=True)
+df = pd.read_csv(data_loader.DATASET2, parse_dates=['dateRep'], infer_datetime_format=True)  # dateRep
 df.rename(columns = {'dateRep':'date', 'countriesAndTerritories':'nation'}, inplace = True)
 
 

@@ -3,11 +3,13 @@ build/src
 build/setup.py
 logs/*
 screenshots
+xyz
 
 # Datasets and models
 Datasets
 data
 models
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
