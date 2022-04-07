@@ -2,14 +2,19 @@
 ## load this from somewhere else please.
 # need to dinstingush "went to the hspital" and "released from the hospital"
 C19 = ['c19', 'covid', 'covid19', 'covid-19', 'coronavirus', 'sars-cov-2']
-STATS = ['cases', 'confirmed', 'positive', 'negative', 'deaths', 'died', 'hospitalized', 'hospital', 'recovered', 'recperated', 'treated', 'cured']
+c19_syns = ['c19', 'covid', 'covid19', 'covid-19', 'coronavirus', 'sars-cov-2']
+
+STATS = ['cases', 'confirmed', 'positive', 'negative', 'deaths', 'died', 'killed' , 'deceased', 'hospitalized', 'hospital', 'recovered', 'recperated', 'treated', 'cured', 'covid', 'corona', 'coronavirus']
+
 stats_NNS = ['cases', 'confirmed', 'positive', 'negative', 'deaths', 'died', 'hospitalized', 'hospital', 'recovered', 'recperated', 'treated', 'cured']
 stats_VBN = ['cases', 'confirmed', 'positive', 'negative', 'deaths', 'died', 'hospitalized', 'hospital', 'recovered', 'recperated', 'treated', 'cured']
 symtomatic = ['had symptoms', 'showed symptoms', 'presented as', 'have symptoms', 'show symptoms']
 
 death_stats = set(['dead', 'deaths', 'died', 'killed', 'lost their life', 'lost their lives', 'passed away' ])
-hospital_stats = set(['hospitalized', 'hospitalised'])
-case_stats = set(['cases', 'confirmed', 'positive', 'had covid', "had coronavirus", 'had corona', 'have covid', 'have coronavirus'])
+hospital_stats = set(['hospitalized', 'hospitalised', 'hospital'])
+case_stats = set(['cases', 'confirmed', 'positive', "covid", 'corona', 'coronavirus'])
+
+case_phrases = set(["got covid", "got corona", 'had covid', "had coronavirus", 'had corona', "came down with", "were diagnosed with", 'have covid', 'have coronavirus'])
 
 future = ['will get', 'will ADV get']
 other_examples = [

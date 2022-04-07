@@ -13,28 +13,33 @@ import pandas as pd
 from etl.etl import * # @TODO
 from common.utils import * # @FIXME
 from common.better_title import better_title
-from lib.components import region_dropdown, region_dropdown_, USGlobal_
+from lib.components import region_dropdown, region_dropdown_u2d, USGlobal_
 #from data_loader import DATASET, DATA_DIR, states
 from data_loader import DATA_DIR, DATASET, DATASET2
 from Datasets.__meta__.nations import big_countries
 import assets.footer as footer
 
 
-
 df = pd.read_csv(DATASET)
-#df_ = pd.read_csv(DATASET2)
-df_ = pd.read_csv(DATA_DIR + 'Global/ecdc_covid_data.csv')
+df_ = pd.read_csv(DATASET2)
+#df_ = pd.read_csv(DATA_DIR + 'Global/ecdc_covid_data.csv')
 
-#if 'nation' in df_.columns:
-#    df_.rename(columns = {'nation': 'countriesAndTerritories'}, inplace = True)
+if 'nation' in df_.columns:
+    df_.rename(columns = {'nation': 'countriesAndTerritories'}, inplace = True)
 
 
 regions='countriesAndTerritories'
 all_countries = list(df_.countriesAndTerritories.unique())
 
-# Unlike pure React, nested components are structures, not functions. This is somewhat complicated by Dash's callback stacking.
-region_dropdown_wb = region_dropdown_('World', 'China')
+ac = ['Australia' 'Austria' 'Belgium' 'Bolivia' 'Bulgaria' 'Canada' 'Croatia'
+ 'Cyprus' 'Czechia' 'Denmark' 'Estonia' 'Finland' 'France' 'Hungary'
+ 'Iceland' 'Ireland' 'Israel' 'Italy' 'Japan' 'Latvia' 'Lithuania'
+ 'Luxembourg' 'Malaysia' 'Malta' 'Netherlands' 'Norway' 'Poland'
+ 'Portugal' 'Romania' 'Serbia' 'Slovakia' 'Slovenia' 'South Africa'
+ 'Spain' 'Sweden' 'Switzerland' 'United Kingdom' 'United States']
 
+# Unlike pure React, nested components are structures, not functions. This is somewhat complicated by Dash's callback stacking.
+region_dropdown_wb2 = region_dropdown_u2d('World', 'France')
 
 
 layout = html.Div([
@@ -69,17 +74,16 @@ layout = html.Div([
             id='radio-selectors-div',
             style={'float':'right', 'clear':'none', 'margin':'0 0 0 0', 'font-size':'.66em', 'padding':'10px', 'margin-right':'3.33vw', 'vertical-align':'text-top', 'backgroundColor':"#", }
             ), # close radios div
-        region_dropdown_wb,
+
+        region_dropdown_wb2,
         ], # end selector-cols items
         id="selector-cols", # This pads title div (but not region dropdown.)
         style={'maring-top':0, 'padding-top':0, 'padding-left':'1vw', 'vertical-align':'text-top', 'backgroundColor': '#' },
         ), # close selector cols div
 
-
-
     html.Div([
         dcc.Graph(
-            id='table_dada_big',
+            id='table_dada_big_',
             config={'displayModeBar': False},
             style={'text-align': 'center','margin-left':0, 'margin-top':0, 'width':'96vw', 'float':'left', 'display':'table', 'padding-right':'3vw', 'padding-left':'1vw'},
             ),
@@ -98,10 +102,9 @@ layout = html.Div([
 
 
 def callback(app):
-    print('========================callback fired')
 
     @app.callback(
-        Output('region_dropdown', 'options'),
+        Output('region_dropdown_', 'options'),
         [Input('USGlobal', 'value')])
     def update_region_selector_dropdown(area):
         region_dropdown_(area)
@@ -116,7 +119,7 @@ def callback(app):
 
 
     @app.callback(
-        Output('table_dada_big', 'figure'),
+        Output('table_dada_big_', 'figure'),
         [Input('USGlobal', 'value'),
         Input('region_dropdown', 'value'),
         ])
@@ -131,7 +134,8 @@ def callback(app):
         confirmed='cases'
 
         dateparse = lambda x: pd.datetime.strptime(x, '%d/%m/%Y')
-        df = pd.read_csv(DATA_DIR + 'Global/ecdc_covid_data.csv', parse_dates=['dateRep'], date_parser=dateparse)
+        #df = pd.read_csv(DATA_DIR + 'Global/ecdc_covid_data.csv', parse_dates=['dateRep'], date_parser=dateparse)
+        df = pd.read_csv(DATASET2, parse_dates=['dateRep'], date_parser=dateparse)
         df = df[df[regions].isin(countries)]
         df['moving'] = df.groupby(regions)[confirmed].transform(lambda x: x.rolling(7, 1).mean())
         df = df.replace(0, '')
@@ -161,7 +165,7 @@ def callback(app):
                 #xaxis={'type': 'log'},
                 #xaxis={'title': 'Date'},
                 xaxis=dict(
-                    title='Count',
+                    title='Date',
                     dtick=0),
                 yaxis=dict(
                     title='Cases',
