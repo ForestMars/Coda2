@@ -25,7 +25,7 @@ DATASET = DATA_DIR + DATA_AREA + DATA_FILE # legacy
 # DATASET = DATA_DIR + '/' + DATA_FILE                                                        # lib.components
 
 #DATA_FILE2 = 'ecdc_covid_data.csv'
-DATA_FILE2 = 'owid_covid_data_by_country_2020.csv'
+DATA_FILE2 = 'owid_covid_data_by_country.csv'
 DATASET2 = DATA_DIR + DATA_AREA + DATA_FILE2 # legacy
 
 # This is naked and needs to find a home (we only load the module once.)
@@ -80,6 +80,20 @@ def get_region_data(area: str, region: str) -> str:
     "Given an area and a region, returns string containing filepath to csv"
     dataset = data_dir[area]+ region + '.csv'
     return dataset
+
+
+
+
+""" Not Used """
+AFRICA = []
+ASIA = []
+EUROPE = []
+N_AMERICAS = []
+S_AMERICAS = []
+MID_EAST = []
+
+
+
 
 if __name__ == '__main__':
     df = pd.read_csv(DATASET)

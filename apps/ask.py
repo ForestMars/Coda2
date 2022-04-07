@@ -1,5 +1,5 @@
 # zapp.py - Reactive data viz app template for Coda.to
-print("=========================LOADING ASK")
+
 __version__ = '0.1'
 __all__ = ['layout', 'callback']
 
@@ -61,7 +61,7 @@ except Exception as e:
 # I miss Jade.
 def get_layout():
     # title = 'Time Series Plot', hovermode = 'closest'
-    print("========= ASK get layout fired")
+
     app.layout = html.Div([
         html.Div(
             style = {'padding-left': '25px', 'padding-right': '25px', 'backgroundColor': '#aa0'},
@@ -115,12 +115,13 @@ def callback(app):
         ])
     # may need another callback here to clear answer to previous question.
     def update_question_answer(question_text):
-        print("=================== update_question_answer")
+
         print(question_text)
         answer = ''
-        if question_text[-1] =='?':
+        if question_text is not None and question_text[-1] =='?':
             question = qa.Question(question_text)
             results = qa.HowManyResults(question, df) # Results obj could obvi load df for itself, but that would be an antipattern here.
+            #df = results.update_df()
             answer = qa.Answer()
 
             return answer.grammatical_answer(results)
