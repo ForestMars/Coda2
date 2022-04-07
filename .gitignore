@@ -28,7 +28,8 @@ downloads/
 eggs/
 .eggs/
 lib/  
-!lib/components.py  # move out of lib, should not be here. 
+!lib/components.py
+!/lib/components.py
 lib64/
 parts/
 sdist/
