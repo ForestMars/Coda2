@@ -67,7 +67,7 @@ def callbacks(app) -> None:
     predict.callback(app)
     simulation.callback(app)
     world.callback(app)
-    world_update.callback(app)
+    world_updated.callback(app)
 
     #multitrace.callback(app)
     #scatterplot.callback(app)
