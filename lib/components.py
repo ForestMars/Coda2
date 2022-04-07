@@ -18,14 +18,12 @@ LATEST = '5/25/2020'
 
 options = [] # labels needed by app.layout
 
-
 rangeslider = dcc.RangeSlider(
     id = 'slider',
     marks = date_marks,
     min = 0,
     max = period,
     value = [1, 55])
-
 
 train_slider = html.Div(
     [
@@ -38,7 +36,6 @@ train_slider = html.Div(
     ],
     style = {'margin-top' : '33px'}
 )
-
 
 # This is kind of brittle in that graph doesn't work at all without y_slider -- should degrade gracefully!
 y_slider = html.Div(
@@ -53,6 +50,7 @@ y_slider = html.Div(
     style = {'backgroundColor' : '', 'width' : 'auto', 'height' : '400px', 'float' : 'left','margin-left':'10px', 'margin-right':0,'padding-right':0,'padding-left':'10px'},
 )
 # @TODO: import styles from CSS
+
 
 def single_region_dropdown_(area: str='USA', val: str=None):
     area = None
@@ -119,11 +117,9 @@ owid_countries = ['Australia', 'Austria', 'Belgium', 'Bolivia', 'Bulgaria', 'Can
 
 def region_dropdown_u2d(area: str, val: str=None):  # -> dcc.dropdown ?
     options = []
-    #for v, k in data_loader.area.items():
     if area is not None:
         for c in owid_countries:
             options.append(dict([('label', c), ('value', c)]))
-            #options.append(dict(['label', c), ('value', c)]))
 
     dropdown = html.Div([
     #html.H4(""),
@@ -182,8 +178,6 @@ y_axis_dropdown = [ #right
         style={'display':'block'},
         ),
 ]
-
-
 
 
 USGlobal_ = [dcc.RadioItems(
