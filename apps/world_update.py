@@ -13,7 +13,7 @@ import pandas as pd
 from etl.etl import * # @TODO
 from common.utils import * # @FIXME
 from common.better_title import better_title
-from lib.components import region_dropdown, region_dropdown_u2d, USGlobal_
+from lib.components import region_dropdown, region_dropdown_, region_dropdown_u2d, USGlobal_, owid_countries
 #from data_loader import DATASET, DATA_DIR, states
 from data_loader import DATA_DIR, DATASET, DATASET2
 from Datasets.__meta__.nations import big_countries
@@ -39,8 +39,7 @@ ac = ['Australia' 'Austria' 'Belgium' 'Bolivia' 'Bulgaria' 'Canada' 'Croatia'
  'Spain' 'Sweden' 'Switzerland' 'United Kingdom' 'United States']
 
 # Unlike pure React, nested components are structures, not functions. This is somewhat complicated by Dash's callback stacking.
-region_dropdown_wb2 = region_dropdown_u2d('World', 'France')
-
+region_dropdown_wb2 = region_dropdown_u2d('Owid', 'France')
 
 layout = html.Div([
     html.Div([ # top / bottom
@@ -51,13 +50,14 @@ layout = html.Div([
 
             html.Div([ # radio-selectors-div
                 dcc.RadioItems(
-                    id="USGlobal",
+                    id="USGlobal_",
                     options=[
+                        {'label': ' Global (Updated)', 'value': 'Owid'},
                         {'label': ' Global Case Data', 'value': 'World'},
                         {'label': ' USA Case Data', 'value': 'USA'},
                         {'label': ' New York Case Data', 'value': 'NYC'}
                         ],
-                    value='World',
+                    value='Owid',
                     labelStyle={'display': 'block'}
                     ),
                 html.Hr(),
@@ -104,14 +104,16 @@ layout = html.Div([
 def callback(app):
 
     @app.callback(
-        Output('region_dropdown_', 'options'),
-        [Input('USGlobal', 'value')])
+        Output('region_dropdown_g', 'options'),  # @FIXME (this was literally 1 of the problems)
+        [Input('USGlobal_', 'value')])
     def update_region_selector_dropdown(area):
         region_dropdown_(area)
         #df_1 = pd.read_csv(DATA_DIR + 'Global' + 'ecdc_covid_data.csv')
         #feature_options = {col:col for col in df_1.columns}
         if area == 'World': # If statements are the bane of functional programming.
             return [{'label': i, 'value': i} for i in big_countries]
+        elif area == 'World_updated': # If statements are the bane of functional programming.
+            return [{'label': i, 'value': i} for i in owid_countries]
         elif area == 'USA': # If statements are the bane of functional programming.
             return [{'label': i, 'value': i} for i in states]
         elif area == 'NY': # If statements are the bane of functional programming.
@@ -120,8 +122,8 @@ def callback(app):
 
     @app.callback(
         Output('table_dada_big_', 'figure'),
-        [Input('USGlobal', 'value'),
-        Input('region_dropdown', 'value'),
+        [Input('USGlobal_', 'value'),
+        Input('region_dropdown_', 'value'),
         ])
     def update_figure(area, countries):
         fig=go.Figure()
