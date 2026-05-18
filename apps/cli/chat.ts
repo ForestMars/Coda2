@@ -1,26 +1,21 @@
-const DEBUG = true;
 /**
- * @file chat.ts
- * @description Main entry point for the Customer Support Agent CLI.
- * Handles user input via readline and orchestrates the supportAgent generator.
+ * @file apps/cli/chat.ts
+ * @description Main entry point for the Coda/Support Agent CLI.
  */
 import * as readline from 'node:readline/promises';
-import {
-  stdin as input,
-  stdout as output,
-} from 'node:process';
+import { stdin as input, stdout as output } from 'node:process';
 import {
   OpenFeature,
   MultiProvider,
   FirstSuccessfulStrategy,
 } from '@openfeature/server-sdk';
-// import { z } from 'zod';
 
 import { logger } from '@sup/infra/logger';
 import type { AgentStep } from '@sup/types/agent-types';
+import { ProtocolResolver } from '@sup/lib/protocol-resolver';
+import { adapters } from '@sup/tools';
+import { JsonFileProvider } from '@sup/infra/adapters/JsonFileProvider';
 
-
-// FIXME: This is fugly, obvi. 
 const AGENT = process.env.AGENT || 'support';
 const { agent, modelSpec } = await (async () => {
   if (AGENT === 'coding') {
@@ -31,83 +26,43 @@ const { agent, modelSpec } = await (async () => {
   return { agent: supportAgent, modelSpec: supportAgentModelSpec };
 })();
 
-
-import { ProtocolResolver } from '@sup/lib/protocol-resolver';
-import { adapters } from '@sup/tools';
-import { JsonFileProvider } from '@sup/infra/adapters/JsonFileProvider';
-
-const { OutputAdapters } =
-  await import('@sup/agents/adapters/output-adapters');
-
-
-
-
-
+const { OutputAdapters } = await import('@sup/agents/adapters/output-adapters');
 
 const providers = [];
 if (process.env.POSTHOG_API_KEY) {
-  const { PostHogProvider } =
-    await import('@tapico/node-openfeature-posthog');
+  const { PostHogProvider } = await import('@tapico/node-openfeature-posthog');
   const { PostHog } = await import('posthog-node');
-  const posthogClient = new PostHog(
-    process.env.POSTHOG_API_KEY,
-    {
-      host:
-        process.env.POSTHOG_HOST ||
-        'https://app.posthog.com',
-    },
-  );
-  providers.push({
-    provider: new PostHogProvider({ posthogClient }),
+  const posthogClient = new PostHog(process.env.POSTHOG_API_KEY, {
+    host: process.env.POSTHOG_HOST || 'https://app.posthog.com',
   });
+  providers.push({ provider: new PostHogProvider({ posthogClient }) });
 }
-providers.push({
-  provider: new JsonFileProvider('../../config/flags.json'),
-});
+providers.push({ provider: new JsonFileProvider('../../config/flags.json') });
 
-const multiProvider = new MultiProvider(
-  providers,
-  new FirstSuccessfulStrategy(),
-);
+const multiProvider = new MultiProvider(providers, new FirstSuccessfulStrategy());
 await OpenFeature.setProviderAndWait(multiProvider);
-
-
-
-
 
 const fflags = OpenFeature.getClient();
 
-// const activeAdapters = [];
+// TTY = stream tokens as they arrive. Piped = collect and print at end.
+const STREAMING = process.stdout.isTTY ?? false;
 
-/**
- * Main chat loop logic, exported for integration testing.
- * The readline interface is created inside the function to allow for
- * clean mocking and to prevent top-level sidffects during testing.
- */
 export async function startChat() {
-  // logger.debug(`Loaded model: ${supportAgentModelSpec}\n`);
   logger.debug(`Agent: ${AGENT}`);
-logger.debug(`Model: ${modelSpec}\n`);
+  logger.debug(`Model: ${modelSpec}`);
 
   const activeAdapters = (
     await Promise.all(
       OutputAdapters.map(async (adapter) =>
-        (await fflags.getBooleanValue(
-          adapter.flagName,
-          false,
-        ))
+        (await fflags.getBooleanValue(adapter.flagName, false))
           ? adapter.wrapper
           : null,
       ),
     )
   ).filter(Boolean);
 
-  console.log('Active adapters:', activeAdapters.length); // Add this
-  console.log('OutputAdapters:', OutputAdapters); // Add this
-
   const rl = readline.createInterface({ input, output });
 
-  // Initialize the global workspace. This lives outside the loop so it persists across multiple turns.
   const session: AgentSession = {
     id: 'cli-session-' + Date.now(),
     events: [],
@@ -116,114 +71,91 @@ logger.debug(`Model: ${modelSpec}\n`);
   try {
     while (true) {
       const userInput = await rl.question('You: ');
-
-      // Allow user to exit the loop
-      if (userInput.toLowerCase() === 'exit') {
-        break;
-      }
+      if (userInput.toLowerCase() === 'exit') break;
 
       try {
-        const steps: AgentStep[] = [];
-        let finalText = '';
-
-        // Create base generator
-
-        /* let generator = supportAgent(userInput, session, {
-          resolver: ProtocolResolver,
-          tools: adapters,
-        });
-        */
         let generator = agent(userInput, session, {
           resolver: ProtocolResolver,
           tools: adapters,
         });
 
-        // Wrap with active adapters
         for (const adapterFn of activeAdapters) {
           generator = adapterFn(generator);
         }
 
-        // Consume the wrapped generator
-        for await (const step of generator) {
-          steps.push(step);
-
-          if (DEBUG) {
-            logger.debug(
-              `\n[${step.type.toUpperCase()}]`,
-              formatStep(step),
-            );
-          }
-
-          if (step.type === 'final') {
-            finalText = step.text;
-          }
-        }
-
-        logger.info(`\nAgent: ${finalText}\n`);
-
-        if (DEBUG) {
-          logger.debug(
-            `[DEBUG] Total steps: ${steps.length}`,
-          );
-          logger.debug(
-            `[DEBUG] Step sequence: ${steps.map((s) => s.type).join(' → ')}\n`,
-          );
-        }
+        await renderStream(generator);
       } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : String(error);
-        logger.error(
-          'Error in agent execution:',
-          errorMessage,
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('Error in agent execution:', message);
         console.error('Full error:', error);
-        console.error(
-          'Stack:',
-          error instanceof Error ? error.stack : 'No stack',
-        );
+        console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
       }
     }
   } finally {
-    // Ensure the terminal interface is released
     rl.close();
   }
 }
-/**
- * Format an AgentStep for debug output in the terminal.
- * @param step The step to format
- * @returns A string representation of the step
- */
-function formatStep(step: AgentStep): string {
-  switch (step.type) {
-    case 'thinking':
-      return step.message;
-    case 'llm_response':
-      return (
-        step.text.substring(0, 100) +
-        (step.text.length > 100 ? '...' : '')
-      );
-    case 'tool_call':
-      return `${step.toolId}(${JSON.stringify(step.parameters)})`;
-    case 'tool_result':
-      return step.error || JSON.stringify(step.result);
-    case 'final':
-      return step.text;
-    default:
-      return 'Unknown step type';
+
+async function renderStream(
+  generator: AsyncGenerator<AgentStep, void, unknown>
+): Promise<void> {
+  let accumulated = '';
+  let firstToken = true;
+
+  for await (const step of generator) {
+    if (process.env.LOG_STEPS === "true") {
+      console.log(step);
+    }
+    switch (step.type) {
+      case 'thinking':
+        if (STREAMING) process.stdout.write(`\n${step.message}\n`);
+        break;
+
+      case 'text_delta':
+        if (STREAMING) {
+          if (firstToken) {
+            process.stdout.write('\nAgent: ');
+            firstToken = false;
+          }
+          if (step.delta) process.stdout.write(step.delta);
+        } else {
+          if (step.delta) accumulated += step.delta;
+        }
+        break;
+
+      case 'tool_call':
+        if (STREAMING) {
+          if (!firstToken) process.stdout.write('\n');
+          process.stdout.write(`[${step.toolId}] `);
+          firstToken = true;
+        }
+        break;
+
+      case 'tool_result':
+        if (STREAMING) process.stdout.write(`✓\n`);
+        break;
+
+      case 'final':
+        if (STREAMING) {
+          if (firstToken) {
+            // No text_delta events made it out (e.g. entire response was inside
+            // <think> tags and got stripped) — write the final text directly.
+            process.stdout.write(`\nAgent: ${step.text}`);
+          }
+          process.stdout.write('\n\n');
+        } else {
+          process.stdout.write(`\nAgent: ${accumulated || step.text}\n\n`);
+        }
+        accumulated = '';
+        firstToken = true;
+        break;
+    }
   }
 }
 
-/**
- * Execution Guard:
- * Only runs the chat loop if the file is called directly via `bun src/chat.ts`.
- * This allows the integration tests to import the file without hanging.
- */
 if (import.meta.main) {
   startChat().catch((err) => {
     logger.error('Fatal CLI Error:', err);
-    // Panic errors can't be logged.
     console.error('Full error:', err);
     console.error('Stack trace:', err.stack);
     process.exit(1);
