@@ -48,7 +48,8 @@ if (lokiEnabled) {
 
 const loggerInstance = pino(
   {
-    level: isDev ? 'debug' : 'info',
+    // level: isDev ? 'debug' : 'info',
+    level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
     base: { model: MODEL_NAME, runtime: 'bun' },
   },
   pino.multistream(streams),
