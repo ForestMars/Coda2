@@ -1,6 +1,6 @@
-# Sup / Coda
+# sup / coda
 
-> Monorepo core for the `sup`/`coda` infrastructure platform — an agentic execution and coding harness built for structured tool orchestration, runtime observability, contextual memory, and multi-runtime experimentation.
+> Monorepo core for the `sup` infrastructure platform — an agentic execution and coding harness built for structured tool orchestration, runtime observability, contextual memory, and multi-runtime experimentation.
 
 ---
 
@@ -18,9 +18,9 @@
 
 ---
 
-## Background (Sup, Coda?)
+## Background
 
-This repository began as `sup`, an enterprise support agent named for its habit of greeting with "Sup?" (HR was not amused.) It evolved into **Coda**: a full agentic coding harness and infrastructure platform. The codebase retains the `sup` namespace across package names and tooling conventions (backlog issue.)
+This repository began as `sup`, an enterprise support agent named for its habit of greeting with "Sup?" It evolved into **Coda**: a full agentic coding harness and infrastructure platform. The codebase retains the `sup` namespace across package names and tooling conventions.
 
 > **Q:** What do you call a programmer from Boston?
 > **A:** *"a coda"*
@@ -101,10 +101,12 @@ This enables debugging, tracing, and behavioral analysis at the agent execution 
 
 ### Multi-Runtime Experimentation
 
-The platform intentionally spans multiple runtimes to explore emerging execution models:
+The platform runs primarily on **Bun**. Active work is underway to ensure full Node.js compatibility, driven in part by the non-trivial effort required to get the TUI stable under Bun's runtime constraints.
 
-- **Node.js** — primary backend runtime
-- **Bun** — required for the TUI; evaluated for broader adoption
+Current runtime surface:
+
+- **Bun** — primary runtime across services and the TUI
+- **Node.js** — compatibility target; full support in progress
 - **Terminal-native interfaces** — experimental TUI via `@opentui/core` with native FFI
 - **Runtime-dependent transport and FFI systems** — per-runtime capability binding
 
@@ -133,7 +135,7 @@ tsconfig.json       Shared compiler configuration
 
 ### Prerequisites
 
-This repository uses both **Node.js (LTS)** and **Bun**. Ensure Bun is available on your shell path before proceeding.
+**Bun** is the primary runtime. **Node.js (LTS)** is also required for certain workspace tooling. Ensure Bun is available on your shell path before proceeding.
 
 If an NVM switch or local Node upgrade resets your path configuration:
 
@@ -199,24 +201,24 @@ This keeps workspace iteration lightweight and avoids redundant local compilatio
 
 ## TUI Runtime Notes
 
-The TUI requires **Bun**. This is not a preference — it is a hard runtime requirement driven by three distinct constraints.
+The TUI runs on **Bun** — but getting it there was non-trivial. Several compatibility constraints made Bun a challenging target, and full Node.js support remains an active goal for exactly this reason.
 
-### 1. Declaration-Only Package Resolution
-
-Portions of the workspace emit declarations rather than compiled JS. Standard Node ESM execution cannot resolve these internal package dependencies without additional transpilation or pre-emitted output, producing module resolution failures at TUI entrypoints.
-
-### 2. OpenTUI FFI Requirements
-
-`@opentui/core` relies on Bun-native FFI bindings via `bun:ffi` and related memory structures to communicate with low-level terminal rendering systems. Standard Node execution is insufficient — the FFI layer is Bun-native.
-
-### 3. Loki / Bun Compatibility
+### Loki / Bun Compatibility
 
 Remote Loki logging is currently disabled within the TUI runtime. Observed behavior:
 
 - TUI startup succeeds with Loki disabled
 - TUI startup crashes under Bun when Loki transport initialization is enabled
 
-`PINOLOGGER_DISABLED=true` is required when launching the TUI until transport isolation is resolved.
+`PINOLOGGER_DISABLED=true` is required when launching the TUI until the transport layer is isolated and restructured.
+
+### OpenTUI FFI Requirements
+
+`@opentui/core` relies on Bun-native FFI bindings via `bun:ffi` and related memory structures to communicate with low-level terminal rendering systems. This is one of the primary constraints driving Bun as the TUI runtime.
+
+### Declaration-Only Package Resolution
+
+Portions of the workspace emit TypeScript declarations rather than compiled JS. Standard Node ESM execution cannot resolve these internal package dependencies without additional transpilation or pre-emitted output, producing module resolution failures at TUI entrypoints. Resolving this is part of the broader Node compatibility work.
 
 ---
 
