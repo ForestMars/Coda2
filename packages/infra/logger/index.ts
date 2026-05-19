@@ -23,7 +23,7 @@ const streams: pino.StreamEntry[] = [];
 const lokiStream = await pinoLoki({
   host: process.env.LOKI_HOST || 'http://localhost:3100',
   labels: { app: 'sup' },
-  batching: { interval: 5 },
+  batching: { interval: 5 } as any, // Bypassing outdated v1 types; v2 runtime supports object configuration.
 });
 
 if (isTerminal && isDev) {
