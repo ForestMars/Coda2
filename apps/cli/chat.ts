@@ -48,8 +48,7 @@ const fflags = OpenFeature.getClient();
 const STREAMING = process.stdout.isTTY ?? false;
 
 export async function startChat() {
-  logger.debug(`Agent: ${AGENT}`);
-  logger.debug(`Model: ${modelSpec}`);
+
 
   const activeAdapters = (
     await Promise.all(
@@ -70,6 +69,8 @@ export async function startChat() {
   };
 
   process.nextTick(() => rl.prompt());
+  // logger.debug(`Agent: ${AGENT}`);
+  //logger.debug(`Model: ${modelSpec}`);
 
   try {
     rl.prompt();
