@@ -21,6 +21,7 @@ const { agent, modelSpec } = await (async () => {
   return { agent: supportAgent, modelSpec: supportAgentModelSpec };
 })();
 
+/* 
 const providers = [];
 if (process.env.POSTHOG_API_KEY) {
   const { PostHogProvider } = await import("@tapico/node-openfeature-posthog");
@@ -32,8 +33,10 @@ if (process.env.POSTHOG_API_KEY) {
 }
 providers.push({ provider: new JsonFileProvider("../../config/flags.json") });
 
+
 const multiProvider = new MultiProvider(providers, new FirstSuccessfulStrategy());
 await OpenFeature.setProviderAndWait(multiProvider);
+*/ 
 
 const session: AgentSession = {
   id: "tui-session-" + Date.now(),
