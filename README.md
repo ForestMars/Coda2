@@ -4,16 +4,9 @@
 
 ---
 
-## Background
-
-This repository began as `sup`, an enterprise support agent named for its habit of greeting with "Sup?" It evolved into **Coda**: a full agentic coding harness and infrastructure platform. The codebase retains the `sup` namespace across package names and tooling conventions.
-
-This is not merely an application repository. It is an **agent systems platform** — a substrate for building, running, and observing autonomous agents across heterogeneous runtimes.
-
----
-
 ## Table of Contents
 
+- [Background](#background)
 - [Architecture Overview](#architecture-overview)
 - [Repository Layout](#repository-layout)
 - [Quick Start](#quick-start)
@@ -22,6 +15,17 @@ This is not merely an application repository. It is an **agent systems platform*
 - [Known Issues](#known-issues)
 - [Advanced Runtime Debugging](#advanced-runtime-debugging)
 - [Component Status](#component-status)
+
+---
+
+## Background
+
+This repository began as `sup`, an enterprise support agent named for its habit of greeting with "Sup?" It evolved into **Coda**: a full agentic coding harness and infrastructure platform. The codebase retains the `sup` namespace across package names and tooling conventions.
+
+> **Q:** What do you call a programmer from Boston?
+> **A:** *"a coda"*
+
+This is not merely an application repository. It is an **agent systems platform** — a substrate for building, running, and observing autonomous agents across heterogeneous runtimes.
 
 ---
 
