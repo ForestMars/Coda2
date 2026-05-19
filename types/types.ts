@@ -5,6 +5,7 @@
  */
 export type AgentStepType =
   | 'thinking' // Agent is processing/calling LLM
+  | 'text_delta' // Used for streaming 
   | 'llm_response' // LLM returned text
   | 'tool_call' // Agent is calling a tool
   | 'tool_result' // Tool execution completed
@@ -24,6 +25,15 @@ interface BaseAgentStep {
 export interface ThinkingStep extends BaseAgentStep {
   type: 'thinking';
   message: string;
+}
+
+
+/**
+ * Streaming step 
+ */
+export interface TextDeltaStep extends BaseAgentStep {
+  type: 'text_delta';
+  delta: string;
 }
 
 /**
@@ -68,6 +78,7 @@ export interface FinalStep extends BaseAgentStep {
  */
 export type AgentStep =
   | ThinkingStep
+  | TextDeltaStep 
   | LLMResponseStep
   | ToolCallStep
   | ToolResultStep
