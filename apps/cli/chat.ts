@@ -61,7 +61,7 @@ export async function startChat() {
   ).filter(Boolean);
 
   const rl = readline.createInterface({ input, output });
-  rl.setPrompt('You: ');
+  // rl.setPrompt('You: ');
 
   const session: AgentSession = {
     id: 'cli-session-' + Date.now(),
@@ -73,10 +73,10 @@ export async function startChat() {
   //logger.debug(`Model: ${modelSpec}`);
 
   try {
-    rl.prompt();
+    // rl.prompt();
 
     while (true) {
-      const userInput = await rl.question('');
+      const userInput = await rl.question('You: ');
       if (userInput.trim().toLowerCase() === 'exit') break;
 
       try {
