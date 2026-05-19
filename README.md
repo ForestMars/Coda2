@@ -209,7 +209,7 @@ The TUI runs on **Bun** — but getting it there was non-trivial. Several compat
 Remote Loki logging is currently disabled within the TUI runtime. Observed behavior:
 
 - TUI startup succeeds with Loki disabled
-- TUI startup crashes under Bun when Loki transport initialization is enabled
+- TUI startup crashes under Bun when Loki transport initialization is enabled (Believe me, I've tried to get this working, without using a really egregious hack.)
 
 `PINOLOGGER_DISABLED=true` is required when launching the TUI until the transport layer is isolated and restructured.
 
