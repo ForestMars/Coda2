@@ -116,6 +116,7 @@ Current runtime surface:
 
 ```
 apps/
+  cli/              Streaming agentic CLI (token-level output, interactive)
   tui/              Experimental terminal UI (Bun-only, see TUI Runtime Notes)
 
 packages/
