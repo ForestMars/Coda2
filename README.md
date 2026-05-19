@@ -1,4 +1,4 @@
-# sup / coda
+# Sup / Coda
 
 > Monorepo core for the `sup`/`coda` infrastructure platform — an agentic execution and coding harness built for structured tool orchestration, runtime observability, contextual memory, and multi-runtime experimentation.
 
@@ -18,7 +18,7 @@
 
 ---
 
-## Background
+## Background (Sup, Coda?)
 
 This repository began as `sup`, an enterprise support agent named for its habit of greeting with "Sup?" (HR was not amused.) It evolved into **Coda**: a full agentic coding harness and infrastructure platform. The codebase retains the `sup` namespace across package names and tooling conventions (backlog issue.)
 
