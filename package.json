@@ -6,7 +6,6 @@
     "#config/*": "./config/*"
   },
   "workspaces": [
-    "apps/cli",
     "packages/tsconfig",
     "packages/domain",
     "packages/agents",
@@ -26,12 +25,14 @@
     "sup": "AGENT=support bun --env-file=.auth apps/cli/chat.ts",
     "sup:loki": "AGENT=support LOKI_ENABLED=true bun apps/cli/chat.ts",
     "coda": "AGENT=coding bun apps/cli/chat.ts",
+    "coda:cli": "AGENT=coding bun apps/cli/chat.ts",
+    "coda:tui": "AGENT=coding bun apps/tui/index.tsx"
     "lint": "eslint . --cache --max-warnings 0",
     "lint:fix": "eslint . --cache --fix --max-warnings 0",
     "preview": "vite preview",
     "test": "bun test ./tests/e2e/e2e.test.ts",
     "test:once": "bun test",
-    "test:ui": "bun test",  
+    "test:ui": "bun test",
     "test:cov": "bun test --coverage ./src/**/*.test.ts ./tests/**/*.test.ts",
     "test:bail": "bun test --coverage --bail ./packages/**/*.test.ts",
     "test:watch": "bun test --watch",
@@ -54,6 +55,8 @@
     "@openfeature/core": "1.9.2",
     "@openfeature/flagd-provider": "^0.13.4",
     "@openfeature/server-sdk": "1.20.2",
+    "@opentui/core": "^0.2.14",
+    "@opentui/solid": "^0.2.14",
     "@tanstack/ai": "^0.6.1",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1.163.3",
