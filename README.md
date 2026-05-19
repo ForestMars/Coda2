@@ -1,6 +1,6 @@
 # sup / coda
 
-> Monorepo core for the `sup` infrastructure platform — an agentic execution and coding harness built for structured tool orchestration, runtime observability, contextual memory, and multi-runtime experimentation.
+> Monorepo core for the `sup`/`coda` infrastructure platform — an agentic execution and coding harness built for structured tool orchestration, runtime observability, contextual memory, and multi-runtime experimentation.
 
 ---
 
