@@ -32,11 +32,10 @@ if (process.env.POSTHOG_API_KEY) {
   providers.push({ provider: new PostHogProvider({ posthogClient }) });
 }
 providers.push({ provider: new JsonFileProvider("../../config/flags.json") });
-
+*/ 
 
 const multiProvider = new MultiProvider(providers, new FirstSuccessfulStrategy());
 await OpenFeature.setProviderAndWait(multiProvider);
-*/ 
 
 const session: AgentSession = {
   id: "tui-session-" + Date.now(),
