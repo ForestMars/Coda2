@@ -136,7 +136,7 @@ tsconfig.json       Shared compiler configuration
 
 ### Prerequisites
 
-**Bun** is the primary runtime. **Node.js (LTS)** is also required for certain workspace tooling. Ensure Bun is available on your shell path before proceeding.
+**Bun** is the primary runtime. **Node.js (LTS)** is also required for certain workspace tooling. Ensure Bun is available on your shell path before proceeding. (Or file any issues you run into with Node.)
 
 If an NVM switch or local Node upgrade resets your path configuration:
 
@@ -157,13 +157,13 @@ bun install
 Most backend services and shared packages run through standard workspace tooling:
 
 ```sh
-npm run dev --workspace=<target-package>
+bun run dev --workspace=<target-package>
 ```
 
 Example:
 
 ```sh
-npm run dev --workspace=apps/api
+bun run dev --workspace=apps/api
 ```
 
 ### Running the TUI
