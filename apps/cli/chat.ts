@@ -62,16 +62,21 @@ export async function startChat() {
   ).filter(Boolean);
 
   const rl = readline.createInterface({ input, output });
+  rl.setPrompt('You: ');
 
   const session: AgentSession = {
     id: 'cli-session-' + Date.now(),
     events: [],
   };
 
+  process.nextTick(() => rl.prompt());
+
   try {
+    rl.prompt();
+
     while (true) {
-      const userInput = await rl.question('You: ');
-      if (userInput.toLowerCase() === 'exit') break;
+      const userInput = await rl.question('');
+      if (userInput.trim().toLowerCase() === 'exit') break;
 
       try {
         let generator = agent(userInput, session, {
@@ -79,17 +84,19 @@ export async function startChat() {
           tools: adapters,
         });
 
-        for (const adapterFn of activeAdapters) {
-          generator = adapterFn(generator);
-        }
-
-        await renderStream(generator);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logger.error('Error in agent execution:', message);
-        console.error('Full error:', error);
-        console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+      for (const adapterFn of activeAdapters) {
+        generator = adapterFn(generator);
       }
+
+    await renderStream(generator);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error('Error in agent execution:', message);
+    console.error('Full error:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+  }
+
+  rl.prompt();
     }
   } finally {
     rl.close();
@@ -138,8 +145,6 @@ async function renderStream(
       case 'final':
         if (STREAMING) {
           if (firstToken) {
-            // No text_delta events made it out (e.g. entire response was inside
-            // <think> tags and got stripped) — write the final text directly.
             process.stdout.write(`\nAgent: ${step.text}`);
           }
           process.stdout.write('\n\n');
