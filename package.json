@@ -25,6 +25,8 @@
     "sup": "AGENT=support bun --env-file=.auth apps/cli/chat.ts",
     "sup:loki": "AGENT=support LOKI_ENABLED=true bun apps/cli/chat.ts",
     "coda": "AGENT=coding bun apps/cli/chat.ts",
+    "coda:cli": "AGENT=coding bun apps/cli/chat.ts",
+    "coda:tui": "AGENT=coding bun apps/tui/index.tsx"
     "lint": "eslint . --cache --max-warnings 0",
     "lint:fix": "eslint . --cache --fix --max-warnings 0",
     "preview": "vite preview",
