@@ -27,6 +27,8 @@ function App() {
   const [busy, setBusy] = createSignal(false);
   const [ready, setReady] = createSignal(false);
   const [currentModel, setCurrentModel] = createSignal("Detecting...");
+
+  let inputRef: any;
   
   let currentAgent: any = null;
 
@@ -50,14 +52,15 @@ function App() {
         const { codingAgent, codingAgentModelSpec } = await import("@sup/agents/coding-agent");
         currentAgent = codingAgent;
         // Extracted structural metadata details safely from imports
-        setCurrentModel(codingAgentModelSpec?.name || "gpt-4o-coding");
+        setCurrentModel(codingAgentModelSpec);
       } else {
         const { supportAgent, supportAgentModelSpec } = await import("@sup/agents/support-agent");
         currentAgent = supportAgent;
-        setCurrentModel(supportAgentModelSpec?.name || "claude-3-5-sonnet");
+        setCurrentModel(supportAgentModelSpec?.name);
       }
 
       setReady(true);
+      setTimeout(() => inputRef?.focus(), 0);
     } catch (e) {
       setCurrentModel("Fallback-LLM");
       setReady(true); 
@@ -163,7 +166,6 @@ function App() {
           <text color="gray">Engine Model:</text>
           <text color="cyan" wrap="wrap" marginBottom={1}>{currentModel()}</text>
           
-          <text color="gray">Status:</text>
           <text color={busy() ? "yellow" : "green"} marginBottom={1}>
             {busy() ? "⚡ Processing" : "💤 Idle"}
           </text>
@@ -184,6 +186,7 @@ function App() {
       <box height={3} borderStyle="single" borderTop width="100%" flexDirection="row" alignItems="center" paddingLeft={1}>
         <text color={busy() ? "yellow" : "cyan"} bold>{busy() ? " ⧗ " : " ❯ "}</text>
         <input
+          ref={inputRef}
           placeholder={!ready() ? "Warming infrastructure..." : busy() ? "Processing inference data..." : "Write context or query..."}
           disabled={busy() || !ready()}
           onSubmit={submit}
