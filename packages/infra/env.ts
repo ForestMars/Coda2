@@ -2,9 +2,12 @@
  * @file infra/env.ts
  * @description Load environment first 
  */
-const DEFAULT_MODEL = 'qwen3:8b';
+
 const DEFAULT_OWNER = 'ForestMars';
 const DEFAULT_REPO = 'coffee';
+const DEFAULT_MODEL = 'qwen3:8b';
+const DEFAULT_CODING_MODEL = 'qwen3:8b';
+const DEFAULT_SUPPORT_AGENT_MODEL = 'qwen3:8b';
 
 export const FACTOTUM_MODEL = 'qwen2.5:1.5b'; 
 export const TEMPERATURE = 0;
