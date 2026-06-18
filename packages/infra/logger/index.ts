@@ -14,7 +14,7 @@ export const pinoStorage = new AsyncLocalStorage<
 >();
 
 const MODEL_NAME = AGENT_MODEL
-const isTerminal = process.stdout.isTTY;
+const isTerminal = process.stdout.isTTY && !process.env.TUI_MODE;
 const isDev = process.env.NODE_ENV !== 'production';
 const lokiEnabled = process.env.LOKI_ENABLED === 'true';
 
@@ -37,7 +37,7 @@ if (isTerminal && isDev) {
   streams.push({ stream: pretty, level: 'debug' });
 } else {
   streams.push({
-    stream: pino.destination(2),
+    stream: pino.destination('/dev/null'),
     level: 'info',
   });
 }
