@@ -2,37 +2,69 @@
 
 TMP_FILE="tmp_junit_report.xml"
 
-# 1. Run Bun tests and force JUnit output to the temp file
-# We use '|| true' so the script doesn't exit prematurely when a test fails.
-bun run tests:unit -- --reporter=junit --reporter-outfile="$TMP_FILE" > /dev/null 2>&1 || true
+# 1. Force clear old reports
+rm -f "$TMP_FILE"
 
-if [ ! -f "$TMP_FILE" ]; then
-    echo "Error: Test report file was not generated."
+# 2. Run the tests fresh and suppress stdout
+bun test ./tests/unit/*.test.ts --reporter=junit --reporter-outfile="$TMP_FILE" --no-cache > /dev/null 2>&1 || true
+
+if [ ! -f "$TMP_FILE" ] || [ ! -s "$TMP_FILE" ]; then
+    echo -e "\n\033[0;31mError:\033[0m Bun crashed completely before writing the test report."
     exit 1
 fi
 
 echo -e "\n=== Test Suite Results ===\n"
 
-# 2. Parse the XML line-by-line using standard sed/awk/grep
-# This checks if a testcase block is closed (passed) or open/contains a failure tag.
-grep -E "<testcase" "$TMP_FILE" | while read -r line; do
-    # Extract the test name from the name="..." attribute
-    name=$(echo "$line" | sed -E 's/.*name="([^"]*)".*/\1/')
-    # Extract the file path
-    file=$(echo "$line" | sed -E 's/.*file="([^"]*)".*/\1/')
-    
-    # Clean up the path format for readability
-    file_short=$(basename "$file")
+# 3. Read the file line-by-line using native Bash regex matching
+CURRENT_NAME=""
+CURRENT_FILE=""
+IS_FAIL=0
+IS_SKIP=0
 
-    # If the line ends with '/>', it passed. Otherwise, it has a child <failure> tag.
-    if [[ "$line" == *"/"\> ]]; then
-        echo -e "  \033[0;32m✓\033[0m $name \033[0;90m($file_short)\033[0m"
-    else
-        echo -e "  \033[0;31m✗\033[0m $name \033[0;90m($file_short)\033[0m"
+# Pre-compile the regex strings for native Bash processing
+NAME_REGEX='name="([^"]*)"'
+FILE_REGEX='file="([^"]*)"'
+
+while read -r line; do
+    # If we hit an opening testcase tag, extract the properties using native Bash [[ $str =~ regex ]]
+    if [[ "$line" == *"<testcase"* ]]; then
+        
+        if [[ "$line" =~ $NAME_REGEX ]]; then
+            CURRENT_NAME="${BASH_REMATCH[1]}"
+        fi
+        
+        if [[ "$line" =~ $FILE_REGEX ]]; then
+            FILE_PATH="${BASH_REMATCH[1]}"
+            CURRENT_FILE=$(basename "$FILE_PATH")
+        fi
+        
+        IS_FAIL=0
+        IS_SKIP=0
+        
+        # If the tag is self-closing (/>), it's a pass. Print it immediately.
+        if [[ "$line" == *"/"\> ]]; then
+            echo -e "  \033[0;32m✓\033[0m $CURRENT_NAME \033[0;90m($CURRENT_FILE)\033[0m"
+            CURRENT_NAME=""
+        fi
+    
+    # Check inner block states
+    elif [[ "$line" == *"<failure"* ]]; then
+        IS_FAIL=1
+    elif [[ "$line" == *"<skipped"* ]]; then
+        IS_SKIP=1
+        
+    # When we hit the closing tag of an open block, print the collected metrics
+    elif [[ "$line" == *"</testcase>"* && -n "$CURRENT_NAME" ]]; then
+        if [ $IS_FAIL -eq 1 ]; then
+            echo -e "  \033[0;31m✗\033[0m $CURRENT_NAME \033[0;90m($CURRENT_FILE)\033[0m"
+        elif [ $IS_SKIP -eq 1 ]; then
+            echo -e "  \033[0;36m- [SKIPPED]\033[0m $CURRENT_NAME \033[0;90m($CURRENT_FILE)\033[0m"
+        fi
+        CURRENT_NAME=""
     fi
-done
+done < "$TMP_FILE"
 
 echo ""
 
-# 3. Clean up the temp file silently and forcefully
+# 4. Clean up
 rm -f "$TMP_FILE"
