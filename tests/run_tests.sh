@@ -7,7 +7,7 @@ EXIT=${PIPESTATUS[0]}
 
 echo ""
 echo "=== Test Results ==="
-grep -E "^(✓|✗|»)" "$TMP"
+grep -E "^\((pass|fail|skip)\)" "$TMP"
 rm -f "$TMP"
 
 exit $EXIT
