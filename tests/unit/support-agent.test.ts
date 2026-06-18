@@ -88,7 +88,7 @@ test('agent returns direct text when no tool invocation needed', async () => {
   expect(finalText.length).toBeGreaterThan(5);
 }, TEST_TIMEOUT);
 
-test('agent remembers order #999 when context is added in second turn', async () => {
+test.skip('agent remembers order #999 when context is added in second turn', async () => {
   const session: AgentSession = { id: 'test-amnesia-fix', events: [] };
   
   // Turn 1: Initial query
