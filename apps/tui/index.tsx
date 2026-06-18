@@ -1,3 +1,4 @@
+process.stdout.write = process.stderr.write.bind(process.stderr);
 import { render } from "@opentui/solid";
 import { createSignal, For, onMount } from "solid-js";
 import {
