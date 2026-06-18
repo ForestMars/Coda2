@@ -352,4 +352,5 @@ export async function* codingAgent(
   yield { type: 'final', timestamp: Date.now(), text: bestText(summaryText, summaryReasoning) };
 }
 
-export const codingAgentModelSpec = `router:${ROUTER_MODEL} coder:${CODER_MODEL}`;
+export const codingAgentModelSpec = `router:${ROUTER_MODEL} 
+coder:${CODER_MODEL}`;

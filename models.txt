@@ -1,0 +1,14 @@
++------------------------------+--------------+---------+--------------+-----------------------------+
+| NAME                         | ID           | SIZE    | MODIFIED     | THINKING MODEL?             |
++------------------------------+--------------+---------+--------------+-----------------------------+
+| opencode-qwen:latest         | 3cf2fe22f8e4 | 4.7 GB  | 5 weeks ago  | No (Standard/Code LLM)      |
+| qwen2.5-coder-agent:latest   | fa2f24e4d32b | 4.7 GB  | 5 weeks ago  | No (Agentic/Code LLM)       |
+| qwen3:8b                     | 500a1f067a9f | 5.2 GB  | 3 months ago | Hybrid (Native Switchable)  |
+| qwen2.5:7b                   | 845dbda0ea48 | 4.7 GB  | 4 months ago | No (General LLM)            |
+| orieg/gemma3-tools:4b-it-qat | 112b9b93b581 | 4.0 GB  | 4 months ago | No (Tool-use LLM)           |
+| qwen2.5-coder:1.5b           | d7372fd82851 | 986 MB  | 9 months ago | No (Code LLM)               |
+| qwen2.5-coder:7b             | dae161e27b0e | 4.7 GB  | 9 months ago | No (Code LLM)               |
+| deepseek-r1:latest           | 6995872bfe4c | 5.2 GB  | 9 months ago | Yes (Reasoning/CoT Model)   |
+| nomic-embed-text:latest      | 0a109f422b47 | 274 MB  | 10 mos ago   | No (Embedding Model)        |
+| gemma3:latest                | a2af6cc3eb7f | 3.3 GB  | 10 mos ago   | No (General LLM)            |
++------------------------------+--------------+---------+--------------+-----------------------------+
