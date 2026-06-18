@@ -8,8 +8,8 @@
     "@sup/types": "workspace:*"
   },
   "exports": {
+    "./*": "./*.ts",
     ".": "./index.ts",
     "./protocol-resolver": "./protocol-resolver.ts"
-    
   }
 }
