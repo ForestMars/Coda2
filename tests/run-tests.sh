@@ -15,31 +15,25 @@ fi
 
 echo -e "\n=== Test Suite Results ===\n"
 
-# 3. Parse using awk, treating </testcase> as the record separator 
-# This lets us safely inspect the entire block of each test, even across lines.
-awk -v RS="</testcase>" '
-NF {
-    # Extract name
-    match($0, /name="([^"]*)"/, n)
-    name = n[1]
-    
-    # Extract file
-    match($0, /file="([^"]*)"/, f)
-    file_short = f[1]
-    sub(/.*\//, "", file_short) # Grabs just the filename
+# 3. Use standard awk to flatten records onto single lines, then parse with portable sed
+awk '{printf "%s ", $0} /<\/testcase>/ {print ""}' "$TMP_FILE" | while read -r record; do
+    # Skip lines that don't contain a testcase node
+    [[ "$record" != *"<testcase"* ]] && continue
 
-    if (!name) next
+    # Extract name and file properties cleanly using sed
+    name=$(echo "$record" | sed -E 's/.*name="([^"]*)".*/\1/')
+    file=$(echo "$record" | sed -E 's/.*file="([^"]*)".*/\1/')
+    file_short=$(basename "$file")
 
-    # Determine status by looking for child tags within the block
-    if ($0 ~ /<failure/) {
-        printf "  \033[0;31m✗\033[0m %s \033[0;90m(%s)\033[0m\n", name, file_short
-    } else if ($0 ~ /<skipped/) {
-        printf "  \033[0;36m- [SKIPPED]\033[0m %s \033[0;90m(%s)\033[0m\n", name, file_short
-    } else {
-        printf "  \033[0;32m✓\033[0m %s \033[0;90m(%s)\033[0m\n", name, file_short
-    }
-}
-' "$TMP_FILE"
+    # Determine status by checking for failure/skipped strings inside the block
+    if [[ "$record" == *"<failure"* ]]; then
+        echo -e "  \033[0;31m✗\033[0m $name \033[0;90m($file_short)\033[0m"
+    elif [[ "$record" == *"<skipped"* ]]; then
+        echo -e "  \033[0;36m- [SKIPPED]\033[0m $name \033[0;90m($file_short)\033[0m"
+    else
+        echo -e "  \033[0;32m✓\033[0m $name \033[0;90m($file_short)\033[0m"
+    fi
+done
 
 echo ""
 
