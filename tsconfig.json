@@ -1,5 +1,10 @@
 {
   "files": [],
+  "compilerOptions": {
+    "paths": {
+      "@apps/*": ["./apps/*"]
+    }
+  },
   "references": [
     { "path": "./packages/domain" },
     { "path": "./packages/agents" },

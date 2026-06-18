@@ -4,6 +4,7 @@
   "exports": {
     ".": "./index.ts",
     "./config": "./config.ts",
+    "./style": "./style/index.ts",
     "./style/": "./style/index.ts",
     "./coding-agent": "./coding-agent.ts",
     "./support-agent": "./support-agent.ts",
