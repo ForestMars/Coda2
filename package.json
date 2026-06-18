@@ -3,7 +3,8 @@
   "type": "module",
   "version": "0.0.3",
   "imports": {
-    "#config/*": "./config/*"
+    "#config/*": "./config/*",
+    "@apps/*": "./apps/*"
   },
   "workspaces": [
     "packages/tsconfig",
