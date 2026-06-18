@@ -68,6 +68,9 @@ export async function startChat() {
     events: [],
   };
 
+  console.log(` Active Agent: \x1b[1m${AGENT.toUpperCase()}\x1b[0m`);
+  console.log(` Active Model: \x1b[32m${typeof modelSpec === 'object' ? JSON.stringify(modelSpec) : modelSpec}\x1b[0m`);
+
   process.nextTick(() => rl.prompt());
   // logger.debug(`Agent: ${AGENT}`);
   //logger.debug(`Model: ${modelSpec}`);
