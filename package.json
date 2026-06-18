@@ -34,6 +34,7 @@
     "test:bail": "bun test --coverage --bail ./packages/**/*.test.ts",
     "test:cov": "bun test --coverage ./src/**/*.test.ts ./tests/**/*.test.ts",
     "test:e2e": "bun test ./tests/e2e/e2e.test.ts",
+    "test:report": "bun test ./tests/unit/*.test.ts --reporter=junit --no-cache --reporter-outfile", // pass [filepath]
     "test:watch": "bun test --watch",
     "tests": "bun test ./tests/**/*.test.ts",
     "tests:int": "bun test ./tests/integration/*.test.ts",
