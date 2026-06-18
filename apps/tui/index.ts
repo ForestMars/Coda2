@@ -21,8 +21,8 @@ const { agent, modelSpec } = await (async () => {
   return { agent: supportAgent, modelSpec: supportAgentModelSpec };
 })();
 
-/* 
 const providers = [];
+/* 
 if (process.env.POSTHOG_API_KEY) {
   const { PostHogProvider } = await import("@tapico/node-openfeature-posthog");
   const { PostHog } = await import("posthog-node");
