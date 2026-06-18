@@ -98,42 +98,59 @@ function App() {
   }
 
   return (
-    // FIX 1: Flex direction must be explicitly coupled with absolute terminal view bounds
-    <box width="100%" height="100%" flexDirection="column">
+    // Outer App Frame with background and single border
+    <box width="100%" height="100%" flexDirection="column" borderStyle="single" borderColor="dim">
       
-      {/* FIX 2: Added specific flex shrink & grow mechanics to prevent infinite rendering loops */}
-      <scrollbox flexGrow={1} flexShrink={1} width="100%">
+      {/* 1. Header Row */}
+      <box height={3} borderStyle="single" borderBottom width="100%" flexDirection="row" alignItems="center" paddingLeft={1} paddingRight={1}>
+        <text bold color="magenta">SUP // </text>
+        <text bold color="white">{AGENT.toUpperCase()} AGENT</text>
+        <box flexGrow={1} />
+        <text color={ready() ? "green" : "yellow"}>
+          {ready() ? "● ONLINE" : "○ INITIALIZING"}
+        </text>
+      </box>
+      
+      {/* 2. Main Chat Workspace Container */}
+      <scrollbox flexGrow={1} flexShrink={1} width="100%" paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
         <For each={messages()}>
           {(msg) => (
-            // FIX 3: Text wrapping. If the agent outputs long text without wrap instructions, the terminal calculation freezes
-            <text wrap="wrap">
-              <span color={msg.role === "user" ? "cyan" : "green"}>
-                {msg.role === "user" ? "You" : "Agent"}:{" "}
-              </span>
-              {msg.text}
-            </text>
+            // Indented and bottom-margined block for structured bubbles
+            <box flexDirection="column" marginBottom={1} width="100%">
+              <text bold color={msg.role === "user" ? "cyan" : "green"}>
+                {msg.role === "user" ? "❯ You" : "❯ Agent"}
+              </text>
+              <box paddingLeft={2} width="100%">
+                <text wrap="wrap" color="white">{msg.text}</text>
+              </box>
+            </box>
           )}
         </For>
         
+        {/* Streaming Block */}
         {streaming() && (
-          <text wrap="wrap">
-            <span color="green">Agent: </span>
-            {streaming()}
-          </text>
+          <box flexDirection="column" marginBottom={1} width="100%">
+            <text bold color="green">❯ Agent</text>
+            <box paddingLeft={2} width="100%">
+              <text wrap="wrap" color="white">{streaming()}</text>
+            </box>
+          </box>
         )}
         
+        {/* Active System/Tool Traces */}
         {activeTool() && (
-          <text>
-            <span color="yellow">[{activeTool()}]</span>
-          </text>
+          <box flexDirection="row" alignItems="center" marginTop={1} marginBottom={1}>
+            <text color="yellow" dim>⠋ Executing tool: </text>
+            <text color="yellow" bold>[{activeTool()}]</text>
+          </box>
         )}
       </scrollbox>
 
-      {/* FIX 4: Solid height boundaries on input row prevents the TUI from recursively recalculating heights */}
-      <box height={3} borderStyle="single" borderTop width="100%" flexDirection="row" alignItems="center">
-        <text color="gray"> </text>
+      {/* 3. Action Input Row */}
+      <box height={3} borderStyle="single" borderTop width="100%" flexDirection="row" alignItems="center" paddingLeft={1}>
+        <text color={busy() ? "yellow" : "cyan"} bold>{busy() ? " ⧗ " : " ❯ "}</text>
         <input
-          placeholder={!ready() ? "Initializing..." : busy() ? "Thinking..." : "Type a message..."}
+          placeholder={!ready() ? "Initializing context modules..." : busy() ? "Analyzing stream..." : "Ask your agent anything..."}
           disabled={busy() || !ready()}
           onSubmit={submit}
           width="100%"
