@@ -25,6 +25,7 @@ function App() {
   const [activeTool, setActiveTool] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const [ready, setReady] = createSignal(false);
+  const [currentModel, setCurrentModel] = createSignal("Detecting...");
   
   let currentAgent: any = null;
 
@@ -45,15 +46,19 @@ function App() {
       await OpenFeature.setProviderAndWait(multiProvider);
 
       if (AGENT === "coding") {
-        const { codingAgent } = await import("@sup/agents/coding-agent");
+        const { codingAgent, codingAgentModelSpec } = await import("@sup/agents/coding-agent");
         currentAgent = codingAgent;
+        // Extracted structural metadata details safely from imports
+        setCurrentModel(codingAgentModelSpec?.name || "gpt-4o-coding");
       } else {
-        const { supportAgent } = await import("@sup/agents/support-agent");
+        const { supportAgent, supportAgentModelSpec } = await import("@sup/agents/support-agent");
         currentAgent = supportAgent;
+        setCurrentModel(supportAgentModelSpec?.name || "claude-3-5-sonnet");
       }
 
       setReady(true);
     } catch (e) {
+      setCurrentModel("Fallback-LLM");
       setReady(true); 
     }
   });
@@ -98,59 +103,87 @@ function App() {
   }
 
   return (
-    // Outer App Frame with background and single border
     <box width="100%" height="100%" flexDirection="column" borderStyle="single" borderColor="dim">
       
-      {/* 1. Header Row */}
+      {/* 1. Global App Header */}
       <box height={3} borderStyle="single" borderBottom width="100%" flexDirection="row" alignItems="center" paddingLeft={1} paddingRight={1}>
         <text bold color="magenta">SUP // </text>
-        <text bold color="white">{AGENT.toUpperCase()} AGENT</text>
+        <text bold color="white">WORKSPACE CONTROL PANEL</text>
         <box flexGrow={1} />
         <text color={ready() ? "green" : "yellow"}>
-          {ready() ? "● ONLINE" : "○ INITIALIZING"}
+          {ready() ? "● ACTIVE CONTEXT" : "○ SYNCING ENVIRONMENT"}
         </text>
       </box>
       
-      {/* 2. Main Chat Workspace Container */}
-      <scrollbox flexGrow={1} flexShrink={1} width="100%" paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
-        <For each={messages()}>
-          {(msg) => (
-            // Indented and bottom-margined block for structured bubbles
+      {/* 2. Main Middle Deck (Splits layout horizontally) */}
+      <box flexGrow={1} flexShrink={1} width="100%" flexDirection="row">
+        
+        {/* Left Side: Scrollable Conversation Field */}
+        <scrollbox flexGrow={1} flexShrink={1} height="100%" paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
+          <For each={messages()}>
+            {(msg) => (
+              <box flexDirection="column" marginBottom={1} width="100%">
+                <text bold color={msg.role === "user" ? "cyan" : "green"}>
+                  {msg.role === "user" ? "❯ You" : "❯ Agent"}
+                </text>
+                <box paddingLeft={2} width="100%">
+                  <text wrap="wrap" color="white">{msg.text}</text>
+                </box>
+              </box>
+            )}
+          </For>
+          
+          {streaming() && (
             <box flexDirection="column" marginBottom={1} width="100%">
-              <text bold color={msg.role === "user" ? "cyan" : "green"}>
-                {msg.role === "user" ? "❯ You" : "❯ Agent"}
-              </text>
+              <text bold color="green">❯ Agent</text>
               <box paddingLeft={2} width="100%">
-                <text wrap="wrap" color="white">{msg.text}</text>
+                <text wrap="wrap" color="white">{streaming()}</text>
               </box>
             </box>
           )}
-        </For>
-        
-        {/* Streaming Block */}
-        {streaming() && (
-          <box flexDirection="column" marginBottom={1} width="100%">
-            <text bold color="green">❯ Agent</text>
-            <box paddingLeft={2} width="100%">
-              <text wrap="wrap" color="white">{streaming()}</text>
-            </box>
-          </box>
-        )}
-        
-        {/* Active System/Tool Traces */}
-        {activeTool() && (
-          <box flexDirection="row" alignItems="center" marginTop={1} marginBottom={1}>
-            <text color="yellow" dim>⠋ Executing tool: </text>
-            <text color="yellow" bold>[{activeTool()}]</text>
-          </box>
-        )}
-      </scrollbox>
+        </scrollbox>
 
-      {/* 3. Action Input Row */}
+        {/* Right Side: Sidebar Meta Deck Panel */}
+        <box 
+          width={28} 
+          height="100%" 
+          flexDirection="column" 
+          borderStyle="single" 
+          borderLeft 
+          paddingLeft={1} 
+          paddingRight={1}
+          paddingTop={1}
+        >
+          <text bold color="magenta" marginBottom={1}>[ AGENT SPEC ]</text>
+          
+          <text color="gray">Type:</text>
+          <text color="white" bold marginBottom={1}>{AGENT.toUpperCase()}</text>
+          
+          <text color="gray">Engine Model:</text>
+          <text color="cyan" wrap="wrap" marginBottom={1}>{currentModel()}</text>
+          
+          <text color="gray">Status:</text>
+          <text color={busy() ? "yellow" : "green"} marginBottom={1}>
+            {busy() ? "⚡ Processing" : "💤 Idle"}
+          </text>
+          
+          <text color="gray" marginTop={1}>Telemetry Log:</text>
+          {activeTool() ? (
+            <box flexDirection="column" marginTop={1}>
+              <text color="yellow" bold>» Tool Invoked</text>
+              <text color="gray" wrap="wrap">[{activeTool()}]</text>
+            </box>
+          ) : (
+            <text color="dim" italic marginTop={1}>Listening...</text>
+          )}
+        </box>
+      </box>
+
+      {/* 3. Action Input Base Footer */}
       <box height={3} borderStyle="single" borderTop width="100%" flexDirection="row" alignItems="center" paddingLeft={1}>
         <text color={busy() ? "yellow" : "cyan"} bold>{busy() ? " ⧗ " : " ❯ "}</text>
         <input
-          placeholder={!ready() ? "Initializing context modules..." : busy() ? "Analyzing stream..." : "Ask your agent anything..."}
+          placeholder={!ready() ? "Warming infrastructure..." : busy() ? "Processing inference data..." : "Write context or query..."}
           disabled={busy() || !ready()}
           onSubmit={submit}
           width="100%"
