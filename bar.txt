@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="7" assertions="12" failures="1" skipped="1" time="0.098587">
+  <testsuite name="tests/unit/styles.test.ts" file="tests/unit/styles.test.ts" tests="4" assertions="6" failures="0" skipped="0" time="0" hostname="Forests-Air.lan">
+    <testcase name="friendly style summarizes order tool result" classname="" time="0.000326" file="tests/unit/styles.test.ts" line="8" assertions="2" />
+    <testcase name="formal style produces concise summary" classname="" time="0.000023" file="tests/unit/styles.test.ts" line="14" assertions="2" />
+    <testcase name="raw style returns raw data" classname="" time="0.000026" file="tests/unit/styles.test.ts" line="20" assertions="1" />
+    <testcase name="generic object summarization" classname="" time="0.0001" file="tests/unit/styles.test.ts" line="25" assertions="1" />
+  </testsuite>
+  <testsuite name="tests/unit/support-agent.test.ts" file="tests/unit/support-agent.test.ts" tests="3" assertions="6" failures="1" skipped="1" time="0.008" hostname="Forests-Air.lan">
+    <testcase name="agent calls entityLookupTool when LLM triggers tool path" classname="" time="0.00894" file="tests/unit/support-agent.test.ts" line="27" assertions="1">
+      <failure type="AssertionError" />
+    </testcase>
+    <testcase name="agent returns direct text when no tool invocation needed" classname="" time="0.000582" file="tests/unit/support-agent.test.ts" line="62" assertions="5" />
+    <testcase name="agent remembers order #999 when context is added in second turn" classname="" time="0" file="tests/unit/support-agent.test.ts" line="91" assertions="0">
+      <skipped />
+    </testcase>
+  </testsuite>
+</testsuites>

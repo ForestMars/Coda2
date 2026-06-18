@@ -5,9 +5,7 @@ TMP_FILE="tmp_junit_report.xml"
 # 1. Force clear old reports
 rm -f "$TMP_FILE"
 
-# 2. Force evaluate all matching test files by expanding the glob explicitly.
-# We bypass "bun run tests:unit" and invoke "bun test" directly with the files
-# to prevent Bun from optimizing out the passing files in the XML report.
+# 2. Run the tests fresh
 bun test ./tests/unit/*.test.ts --reporter=junit --reporter-outfile="$TMP_FILE" --no-cache > /dev/null 2>&1 || true
 
 if [ ! -f "$TMP_FILE" ] || [ ! -s "$TMP_FILE" ]; then
@@ -17,28 +15,45 @@ fi
 
 echo -e "\n=== Test Suite Results ===\n"
 
-# 3. Collapse XML nodes to single lines and parse
-awk '{printf "%s ", $0} /<\/testcase>/ {print ""}' "$TMP_FILE" | while read -r record; do
-    [[ "$record" != *"<testcase"* ]] && continue
+# 3. Read the file line-by-line. 
+# We track state to see if a failure or skip tag appears inside a testcase block.
+CURRENT_NAME=""
+CURRENT_FILE=""
+IS_FAIL=0
+IS_SKIP=0
 
-    # Extract name and file attributes cleanly using sed
-    name=$(echo "$record" | sed -E 's/.*name="([^"]*)".*/\1/')
-    file=$(echo "$record" | sed -E 's/.*file="([^"]*)".*/\1/')
-    file_short=$(basename "$file")
-
-    if [ -z "$name" ]; then
-        continue
+while read -r line; do
+    # If we hit an opening testcase tag, extract the properties
+    if [[ "$line" == *"<testcase"* ]]; then
+        # Use a targeted sed extraction that doesn't care about trailing tags
+        CURRENT_NAME=$(echo "$line" | sed -n 's/.*name="\([^"]*\)".*/\1/p')
+        FILE_PATH=$(echo "$line" | sed -n 's/.*file="\([^"]*\)".*/\1/p')
+        CURRENT_FILE=$(basename "$FILE_PATH")
+        IS_FAIL=0
+        IS_SKIP=0
+        
+        # If the tag is self-closing (/>), it's a pass. Print it immediately.
+        if [[ "$line" == *"/"\> ]]; then
+            echo -e "  \033[0;32m✓\033[0m $CURRENT_NAME \033[0;90m($CURRENT_FILE)\033[0m"
+            CURRENT_NAME=""
+        fi
+    
+    # If we hit a inner block tag before the closing tag
+    elif [[ "$line" == *"<failure"* ]]; then
+        IS_FAIL=1
+    elif [[ "$line" == *"<skipped"* ]]; then
+        IS_SKIP=1
+        
+    # When we hit the closing tag of an open block, print the collected verdict
+    elif [[ "$line" == *"</testcase>"* && -n "$CURRENT_NAME" ]]; then
+        if [ $IS_FAIL -eq 1 ]; then
+            echo -e "  \033[0;31m✗\033[0m $CURRENT_NAME \033[0;90m($CURRENT_FILE)\033[0m"
+        elif [ $IS_SKIP -eq 1 ]; then
+            echo -e "  \033[0;36m- [SKIPPED]\033[0m $CURRENT_NAME \033[0;90m($CURRENT_FILE)\033[0m"
+        fi
+        CURRENT_NAME=""
     fi
-
-    # Determine status
-    if [[ "$record" == *"<failure"* ]]; then
-        echo -e "  \033[0;31m✗\033[0m $name \033[0;90m($file_short)\033[0m"
-    elif [[ "$record" == *"<skipped"* ]]; then
-        echo -e "  \033[0;36m- [SKIPPED]\033[0m $name \033[0;90m($file_short)\033[0m"
-    else
-        echo -e "  \033[0;32m✓\033[0m $name \033[0;90m($file_short)\033[0m"
-    fi
-done
+done < "$TMP_FILE"
 
 echo ""
 
