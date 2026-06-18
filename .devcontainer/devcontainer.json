@@ -1,0 +1,17 @@
+{
+  "name": "TypeScript Monorepo",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "onCreateCommand": "curl -fsSL https://bun.sh/install | bash",
+  "updateContentCommand": "~/.bun/bin/bun install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ]
+    }
+  }
+}
