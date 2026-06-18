@@ -1,11 +1,10 @@
 {
-  "name": "TypeScript Monorepo",
+  "name": "TypeScript Monorepo (Bun)",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers-extra/features/bun:1": {}
   },
-  "onCreateCommand": "curl -fsSL https://bun.sh/install | bash",
-  "updateContentCommand": "~/.bun/bin/bun install",
+  "updateContentCommand": "bun install",
   "customizations": {
     "vscode": {
       "extensions": [
