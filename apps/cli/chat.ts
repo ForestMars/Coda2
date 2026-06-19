@@ -16,7 +16,7 @@ import { ProtocolResolver } from '@sup/lib/protocol-resolver';
 import { adapters } from '@sup/tools';
 import { JsonFileProvider } from '@sup/infra/adapters/JsonFileProvider';
 
-const AGENT = process.env.AGENT || 'support';
+const AGENT = process.env.AGENT_TYPE || 'coding';
 const { agent, modelSpec } = await (async () => {
   if (AGENT === 'coding') {
     const { codingAgent, codingAgentModelSpec } = await import('@sup/agents/coding-agent');
