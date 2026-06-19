@@ -26,8 +26,7 @@ const instructions = readFileSync(
   'utf-8'
 ).replace('{CWD}', CWD);
 
-const FS_TOOLS = ['fs/write', 'fs/read', 'fs/bash', 'fs/glob'];
-const fsRegistry = registry.filter((t) => FS_TOOLS.includes(t.name));
+const toolRegistry = registry;
 
 function toToolKey(name: string): string {
   return name.replace('/', '_');
@@ -205,7 +204,7 @@ export async function* codingAgent(
   logger.debug({ model: CODER_MODEL }, '[codingAgent] tool path');
 
   const toolsMap = Object.fromEntries(
-    fsRegistry.map((t) => [
+    toolRegistry.map((t) => [
       toToolKey(t.name),
       {
         description: t.description,
@@ -294,7 +293,7 @@ export async function* codingAgent(
           const parsed = JSON.parse(jsonMatch[0]);
           const toolKey = parsed.name || parsed.tool || parsed.toolName;
           const originalName = fromToolKey(toolKey);
-          const toolDef = fsRegistry.find((t) => t.name === originalName);
+          const toolDef = toolRegistry.find((t) => t.name === originalName);
           const args = parsed.arguments ?? parsed.parameters ?? parsed.args;
           logger.debug({ toolKey, originalName, hasToolDef: !!toolDef, args }, '[codingAgent] regex fallback parsed');
 
