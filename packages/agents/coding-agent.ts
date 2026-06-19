@@ -296,7 +296,8 @@ export async function* codingAgent(
         try {
           const parsed = JSON.parse(jsonMatch[0]);
           const toolKey = parsed.name || parsed.tool || parsed.toolName;
-          const originalName = fromToolKey(toolKey);
+          // Try both: if it looks like an FS tool (fs_*), convert back; otherwise use as-is
+          const originalName = toolKey.startsWith('fs_') ? fromToolKey(toolKey) : toolKey;
           const toolDef = toolRegistry.find((t) => t.name === originalName);
           const args = parsed.arguments ?? parsed.parameters ?? parsed.args;
           logger.debug({ toolKey, originalName, hasToolDef: !!toolDef, args }, '[codingAgent] regex fallback parsed');
