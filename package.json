@@ -18,20 +18,23 @@
   "main": "index.js",
   "scripts": {
     "agent:test": "bun tests/test-agent.ts",
-    "app": "NODE_ENV=production bun apps/cli/chat.ts",
+    "cli": "NODE_ENV=production bun apps/cli/chat.ts",
+    "cli:coda": "AGENT_TYPE=coding bun apps/cli/chat.ts",
+    "coda": "AGENT_TYPE=coding bun apps/cli/chat.ts",
+    "cli:loki": "LOKI_ENABLED=true bun apps/cli/chat.ts",
+    "cli:sup": "AGENT_TYPE=support bun apps/cli/chat.ts",
+    "sup": "AGENT_TYPE=support bun --env-file=.auth apps/cli/chat.ts",
+    "tui": "TUI_MODE=1 bun --env-file=.auth apps/tui/index.tsx",
+    "tui:debug": "AGENT_TYPE=coding bun --env-file=.auth apps/tui/index.tsx",
+  
     "build": "bun run type-check && vite build",
     "build:ci": "bun run build && bun run test:ci",
     "build:dev": "vite build --mode development",
     "prebuild": "bun scripts/generate-tool-registry.ts",
-    "sup": "AGENT=support bun --env-file=.auth apps/cli/chat.ts",
-    "sup:loki": "AGENT=support LOKI_ENABLED=true bun apps/cli/chat.ts",
-    "coda": "AGENT=coding bun apps/cli/chat.ts",
-    "coda:cli": "AGENT=coding bun apps/cli/chat.ts",
-    "tui:debug": "AGENT=coding bun --env-file=.auth apps/tui/index.tsx",
-    "coda:tui": "AGENT=coding bun --env-file=.auth apps/tui/index.tsx 2>/dev/null",
+    "preview": "vite preview",
+    
     "lint": "eslint . --cache --max-warnings 0",
     "lint:fix": "eslint . --cache --fix --max-warnings 0",
-    "preview": "vite preview",
     "test:bail": "bun test --coverage --bail ./packages/**/*.test.ts",
     "test:cov": "bun test --coverage ./src/**/*.test.ts ./tests/**/*.test.ts",
     "test:e2e": "bun test ./tests/e2e/e2e.test.ts",
@@ -46,7 +49,9 @@
     "clean:fr": "find . -name 'dist' -type d -prune -exec rm -rf {} + && find . -name '*.tsbuildinfo' -delete && tsc --build --clean",
     "clean:nuke": "find . -type f \\( -name '*.js' -o -name '*.d.ts' -o -name '*.d.ts.map' -o -name '*.js.map' -o -name '*.tsbuildinfo' \\) -not -path '*/node_modules/*' -delete && find . -name 'dist' -type d -prune -exec rm -rf {} +",
     "reinstall": "bun pm cache rm && rm -rf node_modules && bun install",
-    "rebuild": "bun run clean:dist && bun run clean:tsbuildinfo && bun tsc --build --force"
+    "rebuild": "bun run clean:dist && bun run clean:tsbuildinfo && bun tsc --build --force", 
+    
+    "tui:coda": "TUI_MODE=1 AGENT=coding bun --env-file=.auth apps/tui/index.tsx"
   },
   "keywords": [],
   "author": "",
