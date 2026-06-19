@@ -53,7 +53,7 @@ async function needsTools(userInput: string, history: string): Promise<boolean> 
   const response = await generateText({
     model: ollama(ROUTER_MODEL),
     temperature: 0,
-    system: `You are a router. Decide if the user's request requires reading or writing files, running shell commands, or executing code.
+    system: `You are a router. Decide if the user's request requires tool use: reading or writing files, running shell commands, executing code, creating/searching/updating GitHub issues, or other external actions.
 Reply with only "yes" or "no".`,
     prompt: history ? `${history}\nUser: ${userInput}` : userInput,
   });
@@ -204,14 +204,18 @@ export async function* codingAgent(
   logger.debug({ model: CODER_MODEL }, '[codingAgent] tool path');
 
   const toolsMap = Object.fromEntries(
-    toolRegistry.map((t) => [
-      toToolKey(t.name),
-      {
-        description: t.description,
-        parameters: t.parameters,
-        execute: async (args: any) => runTool(t.name, args),
-      },
-    ])
+    toolRegistry.map((t) => {
+      // Only transform FS tool names; keep others (like github/*) as-is
+      const toolKey = t.name.startsWith('fs/') ? toToolKey(t.name) : t.name;
+      return [
+        toolKey,
+        {
+          description: t.description,
+          parameters: t.parameters,
+          execute: async (args: any) => runTool(t.name, args),
+        },
+      ];
+    })
   );
 
   logger.debug({ toolKeys: Object.keys(toolsMap) }, '[codingAgent] registered tools');
