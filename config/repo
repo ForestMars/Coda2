@@ -1,9 +1,12 @@
 /**
  * @file /config/repo.ts
  */
+
+const REPO = process.env.GH_REPO || 'coffee';
+
 export const repoConfig = {
   owner: 'ForestMars',
-  repo: 'coffee',
+  repo: GH_REPO,
   token: process.env.GITHUB_TOKEN, // Still pulled from env for security
 };
 
