@@ -12,12 +12,7 @@ export async function runTool(name: string, args: any): Promise<any> {
   }
 
   try {
-    // We use the directory name (e.g., 'smoke') and the entry file (e.g., 'index.ts')
-    // Assuming your registry structure stores the relative directory or path
-    // If your registry generation script just has the name, we use the tool's directory:
-    const folderName = name === 'smoke_test' ? 'smoke' : name; // Temporary fix for the naming mismatch
-    
-    const modulePath = join(__dirname, folderName, toolEntry.entry || 'index.ts');
+    const modulePath = join(__dirname, toolEntry.importPath || toolEntry.entry || 'index.ts');
     const toolModule = await import(modulePath);
     
     if (typeof toolModule.run !== 'function') {
