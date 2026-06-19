@@ -14,6 +14,7 @@ import { readFileSync } from 'fs';
 import type { AgentSession, AgentEvent, AgentStep } from '@sup/types/types';
 import { logger } from '@sup/infra/logger';
 import { tools as registry, runTool } from '@sup/tools';
+import { filterToolsForAgent } from './agent-tool-registry';
 
 const ROUTER_MODEL = 'qwen3:8b';
 const CODER_MODEL = process.env.CODING_AGENT_MODEL || 'qwen2.5-coder:14b';
@@ -26,7 +27,7 @@ const instructions = readFileSync(
   'utf-8'
 ).replace('{CWD}', CWD);
 
-const toolRegistry = registry;
+const toolRegistry = filterToolsForAgent(registry, 'coding');
 
 function toToolKey(name: string): string {
   return name.replace('/', '_');
