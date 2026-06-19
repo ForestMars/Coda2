@@ -17,8 +17,10 @@ export interface CreateIssueParams {
 export async function createIssue(params: CreateIssueParams) {
   const { title, body = "", labels = [] } = params;
 
-  if (!title) {
-    throw new Error("title parameter is required");
+  if (!title || title.trim() === '') {
+    throw new Error(
+      'title parameter is required. Please provide a brief title for the GitHub issue. Example: "Fix login bug" or "Add email validation"'
+    );
   }
 
   if (!token) {
