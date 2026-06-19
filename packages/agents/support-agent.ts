@@ -19,6 +19,7 @@ import { rebuildGraph } from '@sup/lib/graph-reducer';
 import { logger } from '@sup/infra/logger';
 import { CONTEXT_ANCHOR } from '@sup/agents/config';
 import { tools as registry, runTool } from "@sup/tools";
+import { filterToolsForAgent } from "./agent-tool-registry";
 // import { OutputPort } from '@sup/domain';
 
 // const DEFAULT_MODEL = 'qwen2.5:7b'; // AGENT_MODEL
@@ -159,7 +160,7 @@ export async function* supportAgent(
     system: systemPrompt,
     temperature: supportAgentConfig.temperature,
     tools: Object.fromEntries(
-      registry.map((t) => [
+      filterToolsForAgent(registry, 'support').map((t) => [
         t.name,
         {
           description: t.description,
