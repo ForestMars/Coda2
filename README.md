@@ -2,6 +2,7 @@
 
 > Monorepo core for the `sup` infrastructure platform — an agentic execution and coding harness built for structured tool orchestration, runtime observability, contextual memory, and multi-runtime experimentation.
 
+
 ---
 
 ## Table of Contents
