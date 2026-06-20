@@ -21,7 +21,7 @@
 
 ## Background
 
-This repository began as `sup`, an enterprise support agent named for its habit of greeting with "Sup?" It evolved into **Coda**: a full agentic coding harness and infrastructure platform. The codebase retains the `sup` namespace across package names and tooling conventions.
+This repository began life as `sup`, an enterprise support agent named for its habit of greeting with "Sup?" It evolved into **Coda**: a full agentic coding harness and infrastructure platform. The codebase retains the `sup` namespace across package names and tooling conventions.
 
 > **Q:** What do you call a programmer from Boston?
 > **A:** *"a coda"*
