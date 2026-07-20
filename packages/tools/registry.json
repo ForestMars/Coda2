@@ -1,99 +1,5 @@
 [
   {
-    "name": "smoke",
-    "description": "A sanity check tool to verify tool-calling is working. Triggered when the user asks what day it is.",
-    "entry": "index.ts",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "query": {
-          "type": "string",
-          "description": "The user's question about the date or time"
-        }
-      },
-      "required": [
-        "query"
-      ]
-    },
-    "importPath": "smoke/index.ts"
-  },
-  {
-    "name": "github/create_issue",
-    "description": "Files a new issue in a GitHub repository.",
-    "entry": "./index.ts",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string"
-        },
-        "body": {
-          "type": "string"
-        },
-        "labels": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "title"
-      ]
-    },
-    "importPath": "github/create_issue/index.ts"
-  },
-  {
-    "name": "github/search_issues",
-    "description": "Search for GitHub issues in the repository.",
-    "entry": "./index.ts",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "query": {
-          "type": "string",
-          "description": "Search query"
-        },
-        "state": {
-          "type": "string",
-          "enum": [
-            "open",
-            "closed",
-            "all"
-          ],
-          "description": "Issue state filter"
-        }
-      },
-      "required": [
-        "query"
-      ]
-    },
-    "importPath": "github/search_issues/index.ts"
-  },
-  {
-    "name": "github/comment_issue",
-    "description": "Adds a comment to an existing GitHub issue.",
-    "entry": "./index.ts",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "issue_number": {
-          "type": "number",
-          "description": "The issue number to comment on"
-        },
-        "body": {
-          "type": "string",
-          "description": "The comment text"
-        }
-      },
-      "required": [
-        "issue_number",
-        "body"
-      ]
-    },
-    "importPath": "github/comment_issue/index.ts"
-  },
-  {
     "name": "day.get",
     "description": "Returns the current day of the week",
     "importPath": "day-tool/index.ts",
@@ -104,50 +10,9 @@
     }
   },
   {
-    "name": "fs/write",
-    "description": "Write content to a file. The path must be relative to the project root, e.g. src/main.ts or README.md. Never use absolute paths or placeholder paths like /path/to/file.",
-    "entry": "index.ts",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string",
-          "description": "Relative path from the project root, e.g. src/main.ts or README.md"
-        },
-        "content": {
-          "type": "string",
-          "description": "The full content to write to the file"
-        }
-      },
-      "required": [
-        "path",
-        "content"
-      ]
-    },
-    "importPath": "fs/write/index.ts"
-  },
-  {
-    "name": "fs.read",
-    "description": "Read the content of a file. The path must be relative to the project root, e.g. src/main.ts or README.md.",
-    "entry": "index.ts",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string",
-          "description": "Relative path from the project root, e.g. src/main.ts"
-        }
-      },
-      "required": [
-        "path"
-      ]
-    },
-    "importPath": "fs/read/index.ts"
-  },
-  {
     "name": "fs.bash",
     "description": "Run a shell command in the project root directory.",
-    "entry": "index.ts",
+    "importPath": "fs/bash/index.ts",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -159,13 +24,12 @@
       "required": [
         "command"
       ]
-    },
-    "importPath": "fs/bash/index.ts"
+    }
   },
   {
     "name": "fs.glob",
     "description": "List files in the project matching a pattern, e.g. *.ts or *.json.",
-    "entry": "index.ts",
+    "importPath": "fs/glob/index.ts",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -177,7 +41,40 @@
       "required": [
         "pattern"
       ]
-    },
-    "importPath": "fs/glob/index.ts"
+    }
+  },
+  {
+    "name": "fs.read",
+    "description": "Read the content of a file. The path must be relative to the project root, e.g. src/main.ts or README.md.",
+    "importPath": "fs/read/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative path from the project root, e.g. src/main.ts"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  },
+  {
+    "name": "smoke",
+    "description": "A sanity check tool to verify tool-calling is working. Triggered when the user asks what day it is.",
+    "importPath": "smoke/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The user's question about the date or time"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
   }
 ]
