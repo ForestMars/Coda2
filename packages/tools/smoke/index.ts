@@ -1,4 +1,5 @@
 /**
+ * @file packages/tools/smoke/index.ts
  * Smoke test tool to verify registry and execution flow.
  */
 export async function run(params: { query: string }): Promise<string> {
