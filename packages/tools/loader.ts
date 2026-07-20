@@ -1,3 +1,4 @@
+// packages/tools/loader.ts
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import registry from "./registry.json" assert { type: "json" };
