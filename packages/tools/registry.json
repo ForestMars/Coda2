@@ -94,6 +94,16 @@
     "importPath": "github/comment_issue/index.ts"
   },
   {
+    "name": "day.get",
+    "description": "Returns the current day of the week",
+    "importPath": "day-tool/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
     "name": "fs/write",
     "description": "Write content to a file. The path must be relative to the project root, e.g. src/main.ts or README.md. Never use absolute paths or placeholder paths like /path/to/file.",
     "entry": "index.ts",
@@ -117,7 +127,7 @@
     "importPath": "fs/write/index.ts"
   },
   {
-    "name": "fs/read",
+    "name": "fs.read",
     "description": "Read the content of a file. The path must be relative to the project root, e.g. src/main.ts or README.md.",
     "entry": "index.ts",
     "inputSchema": {
@@ -135,7 +145,7 @@
     "importPath": "fs/read/index.ts"
   },
   {
-    "name": "fs/bash",
+    "name": "fs.bash",
     "description": "Run a shell command in the project root directory.",
     "entry": "index.ts",
     "inputSchema": {
@@ -153,7 +163,7 @@
     "importPath": "fs/bash/index.ts"
   },
   {
-    "name": "fs/glob",
+    "name": "fs.glob",
     "description": "List files in the project matching a pattern, e.g. *.ts or *.json.",
     "entry": "index.ts",
     "inputSchema": {
