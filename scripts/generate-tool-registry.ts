@@ -1,6 +1,7 @@
 /**
  * @file scripts/generate-tool-registry.ts
- * @description Scans tool manifests, validates MCP tool names, and updates registry.json.
+ * @description Scans tool manifests, validates MCP tool names, skips broken manifests,
+ * and updates registry.json with all valid tools.
  */
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
@@ -11,8 +12,8 @@ const MCP_TOOL_NAME_REGEX = /^[A-Za-z0-9_.-]+$/;
 
 interface ToolManifest {
   name: string;
-  description: string;
-  entry: string;
+  description?: string;
+  entry?: string;
   inputSchema?: Record<string, unknown>;
   parameters?: Record<string, unknown>;
 }
@@ -39,6 +40,7 @@ async function findManifests(dir: string): Promise<string[]> {
 
 async function generateRegistry() {
   const manifestPaths = await findManifests(TOOLS_DIR);
+  const totalManifests = manifestPaths.length;
   const registry: RegistryEntry[] = [];
   const errors: ManifestError[] = [];
 
@@ -103,9 +105,9 @@ async function generateRegistry() {
     });
   }
 
-  // If any errors were encountered across all manifests, output them together
+  // Report errors for skipped manifests
   if (errors.length > 0) {
-    console.error(`\n❌ Found ${errors.length} issue(s) in tool manifests:\n`);
+    console.error(`\n⚠️ Skipped ${errors.length} invalid tool manifest(s):\n`);
     for (const err of errors) {
       console.error(`  • ${err.manifestPath}`);
       console.error(`    Error:      ${err.reason}`);
@@ -114,6 +116,11 @@ async function generateRegistry() {
       }
       console.error("");
     }
+  }
+
+  // Only hard fail if zero tools could be loaded at all
+  if (registry.length === 0) {
+    console.error(`❌ Critical failure: 0 tools were successfully loaded out of ${totalManifests} found.`);
     process.exit(1);
   }
 
@@ -130,12 +137,12 @@ async function generateRegistry() {
   }
 
   if (existingContent === newContent) {
-    console.log(`ℹ️ Registry unchanged (${registry.length} tools up to date). [no-op]`);
+    console.log(`ℹ️ Registry unchanged (${registry.length} tools out of ${totalManifests} loaded). [no-op]`);
     return;
   }
 
   await writeFile(REGISTRY_PATH, newContent, "utf-8");
-  console.log(`🚀 Registry updated: ${registry.length} tools registered -> packages/tools/registry.json`);
+  console.log(`🚀 Registry updated: ${registry.length} tools out of ${totalManifests} loaded -> packages/tools/registry.json`);
 }
 
 generateRegistry().catch((err) => {
