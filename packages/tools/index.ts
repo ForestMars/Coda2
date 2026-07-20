@@ -1,5 +1,5 @@
 /**
- * @file index.ts
+ * @file pagages/tools/index.ts
  * @description Central registry for all support tools.
  */
 import registry from "./registry.json" assert { type: "json" };
