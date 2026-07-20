@@ -1,5 +1,5 @@
 {
-  "name": "fs/write",
+  "name": "fs.write",
   "description": "Write content to a file. The path must be relative to the project root, e.g. src/main.ts or README.md. Never use absolute paths or placeholder paths like /path/to/file.",
   "entry": "index.ts",
   "parameters": {
