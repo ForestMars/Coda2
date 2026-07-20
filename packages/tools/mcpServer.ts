@@ -192,7 +192,7 @@ function getLoadedTools(): Promise<LoadedTool[]> {
 // SERVER FACTORY & TOOL EXECUTION
 // ============================================================================
 async function buildServer(): Promise<McpServer> {
-    logDebug('SERVER_BUILD', 'buildServer() invoked (constructing new McpServer instance)');
+    // logDebug('SERVER_BUILD', 'buildServer() invoked (constructing new McpServer instance)'); // much higher debug level!
     const server = new McpServer({ name: 'coda2-tools-server', version: '1.0.0' });
     
     const tools = await getLoadedTools();
