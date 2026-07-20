@@ -61,6 +61,118 @@
     }
   },
   {
+    "name": "fs.write",
+    "description": "Write content to a file. The path must be relative to the project root, e.g. src/main.ts or README.md. Never use absolute paths or placeholder paths like /path/to/file.",
+    "importPath": "fs/write/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative path from the project root, e.g. src/main.ts or README.md"
+        },
+        "content": {
+          "type": "string",
+          "description": "The full content to write to the file"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ]
+    }
+  },
+  {
+    "name": "github.closes_issue",
+    "description": "Closes an existing issue in a GitHub repository.",
+    "importPath": "github/close_issue/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "issue_number": {
+          "type": "number",
+          "description": "The issue number to close"
+        }
+      },
+      "required": [
+        "issue_number"
+      ]
+    }
+  },
+  {
+    "name": "github.comment_issue",
+    "description": "Adds a comment to an existing GitHub issue.",
+    "importPath": "github/comment_issue/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "issue_number": {
+          "type": "number",
+          "description": "The issue number to comment on"
+        },
+        "body": {
+          "type": "string",
+          "description": "The comment text"
+        }
+      },
+      "required": [
+        "issue_number",
+        "body"
+      ]
+    }
+  },
+  {
+    "name": "github.create_issue",
+    "description": "Files a new issue in a GitHub repository.",
+    "importPath": "github/create_issue/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "title"
+      ]
+    }
+  },
+  {
+    "name": "github.search_issues",
+    "description": "Search for GitHub issues in the repository.",
+    "importPath": "github/search_issues/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "open",
+            "closed",
+            "all"
+          ],
+          "description": "Issue state filter"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+  },
+  {
     "name": "smoke",
     "description": "A sanity check tool to verify tool-calling is working. Triggered when the user asks what day it is.",
     "importPath": "smoke/index.ts",
