@@ -24,10 +24,10 @@ interface RegistryEntry {
   inputSchema: Record<string, unknown>;
 }
 
-interface ValidationError {
+interface ManifestError {
   manifestPath: string;
-  invalidName: string;
-  expectedName: string;
+  reason: string;
+  suggestion?: string;
 }
 
 async function findManifests(dir: string): Promise<string[]> {
@@ -37,26 +37,57 @@ async function findManifests(dir: string): Promise<string[]> {
     .map((e) => join(e.parentPath, e.name));
 }
 
-function validateToolName(name: string): boolean {
-  return MCP_TOOL_NAME_REGEX.test(name);
-}
-
 async function generateRegistry() {
   const manifestPaths = await findManifests(TOOLS_DIR);
   const registry: RegistryEntry[] = [];
-  const errors: ValidationError[] = [];
+  const errors: ManifestError[] = [];
 
   for (const manifestPath of manifestPaths) {
-    const raw = await readFile(manifestPath, "utf-8");
-    const manifest: ToolManifest = JSON.parse(raw);
     const relPath = relative(TOOLS_DIR, manifestPath);
+    let raw = "";
 
-    // Validate tool name without crashing early
-    if (!validateToolName(manifest.name)) {
+    try {
+      raw = await readFile(manifestPath, "utf-8");
+    } catch (err) {
       errors.push({
         manifestPath: relPath,
-        invalidName: manifest.name,
-        expectedName: manifest.name.replaceAll("/", ".")
+        reason: `Could not read file: ${err instanceof Error ? err.message : String(err)}`
+      });
+      continue;
+    }
+
+    if (!raw.trim()) {
+      errors.push({
+        manifestPath: relPath,
+        reason: "File is completely empty (Unexpected EOF)"
+      });
+      continue;
+    }
+
+    let manifest: ToolManifest;
+    try {
+      manifest = JSON.parse(raw);
+    } catch (err) {
+      errors.push({
+        manifestPath: relPath,
+        reason: `Invalid JSON syntax: ${err instanceof Error ? err.message : String(err)}`
+      });
+      continue;
+    }
+
+    if (!manifest.name) {
+      errors.push({
+        manifestPath: relPath,
+        reason: "Missing required property 'name' in manifest.json"
+      });
+      continue;
+    }
+
+    if (!MCP_TOOL_NAME_REGEX.test(manifest.name)) {
+      errors.push({
+        manifestPath: relPath,
+        reason: `Invalid MCP tool name "${manifest.name}". Must match regex ${MCP_TOOL_NAME_REGEX}`,
+        suggestion: `Change "${manifest.name}" to "${manifest.name.replaceAll("/", ".")}"`
       });
       continue;
     }
@@ -66,21 +97,23 @@ async function generateRegistry() {
 
     registry.push({
       name: manifest.name,
-      description: manifest.description,
+      description: manifest.description || "",
       importPath,
       inputSchema: manifest.inputSchema || manifest.parameters || {}
     });
   }
 
-  // Report all validation failures cleanly before exiting
+  // If any errors were encountered across all manifests, output them together
   if (errors.length > 0) {
-    console.error(`\n❌ Found ${errors.length} invalid tool name(s) in manifests:\n`);
+    console.error(`\n❌ Found ${errors.length} issue(s) in tool manifests:\n`);
     for (const err of errors) {
       console.error(`  • ${err.manifestPath}`);
-      console.error(`    Current:  "${err.invalidName}"`);
-      console.error(`    Expected: "${err.expectedName}"\n`);
+      console.error(`    Error:      ${err.reason}`);
+      if (err.suggestion) {
+        console.error(`    Fix:        ${err.suggestion}`);
+      }
+      console.error("");
     }
-    console.error(`Names must match regex: ${MCP_TOOL_NAME_REGEX}`);
     process.exit(1);
   }
 
@@ -106,6 +139,6 @@ async function generateRegistry() {
 }
 
 generateRegistry().catch((err) => {
-  console.error("❌ Unexpected script error:", err);
+  console.error("❌ Fatal execution error:", err);
   process.exit(1);
 });
