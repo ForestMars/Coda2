@@ -13,7 +13,7 @@
 // Run: bun run mcpServer.ts
 
 // MCP Streamable HTTP server — Bun + @modelcontextprotocol/server (v2, beta)
-// Complete Replacement with Comprehensive Debugging
+// Complete Replacement with Robust Schema Guardrails & Debugging
 import path from 'node:path';
 
 import {
@@ -82,7 +82,7 @@ interface RegistryEntry {
     name: string;
     description: string;
     entry: string;
-    parameters: Record<string, unknown>; // raw JSON Schema from manifest.json
+    inputSchema: Record<string, unknown>; // raw JSON Schema from manifest.json
     importPath: string; // relative to packages/tools
 }
 
@@ -99,6 +99,31 @@ type ToolFn = (args: unknown) => Promise<unknown> | unknown;
 
 interface LoadedTool extends RegistryEntry {
     fn: ToolFn;
+}
+
+/**
+ * Normalizes raw tool parameter schema to ensure AJV / fromJsonSchema receive a valid object.
+ */
+function sanitizeSchema(params: unknown, toolName: string): Record<string, unknown> {
+    if (!params || typeof params !== 'object' || Array.isArray(params)) {
+        logDebug('SCHEMA_GUARD', `Tool "${toolName}" missing valid parameters schema object. Fallback to empty object schema.`);
+        return {
+            type: 'object',
+            properties: {}
+        };
+    }
+
+    const schemaObj = { ...(params as Record<string, unknown>) };
+
+    // Ensure fundamental JSON schema fields exist if missing
+    if (!schemaObj.type) {
+        schemaObj.type = 'object';
+    }
+    if (!schemaObj.properties && schemaObj.type === 'object') {
+        schemaObj.properties = {};
+    }
+
+    return schemaObj;
 }
 
 async function loadTool(entry: RegistryEntry): Promise<LoadedTool> {
@@ -172,16 +197,26 @@ async function buildServer(): Promise<McpServer> {
     
     const tools = await getLoadedTools();
 
+    console.log(JSON.stringify(tools, null, 2));
     for (const tool of tools) {
-        logDebug('SERVER_BUILD', `Registering tool "${tool.name}" with McpServer instance`);
-        
+        const safeSchema = sanitizeSchema(tool.inputSchema, tool.name);
+
+        logDebug('SERVER_BUILD', `Registering tool "${tool.name}" with McpServer instance`, {
+            rawParameters: tool.inputSchema,
+            sanitizedSchema: safeSchema
+        });
+
+        // Sanitize name to strictly conform to MCP naming standard (A-Z, a-z, 0-9, _, -, .)
+        const safeToolName = tool.name.replace(/\//g, '_');
+
         server.registerTool(
-            tool.name,
+            safeToolName,
             {
                 title: tool.name,
                 description: tool.description,
-                inputSchema: fromJsonSchema(tool.parameters)
+                inputSchema: fromJsonSchema(safeSchema)
             },
+       
             async (args: unknown) => {
                 const startTime = performance.now();
                 logDebug('TOOL_EXEC', `Executing tool "${tool.name}"`, { inputArgs: args });
@@ -221,7 +256,7 @@ async function buildServer(): Promise<McpServer> {
 
 const handler = createMcpHandler(buildServer, {
     onerror: (err: unknown) => {
-        logError('HANDLER_ERROR', 'MCP streamable handler encounter error', err);
+        logError('HANDLER_ERROR', 'MCP streamable handler encountered error', err);
     }
 });
 
