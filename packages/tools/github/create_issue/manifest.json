@@ -1,5 +1,5 @@
 {
-  "name": "github/create_issue",
+  "name": "github.create_issue",
   "description": "Files a new issue in a GitHub repository.",
   "entry": "./index.ts",
   "parameters": {
