@@ -1,5 +1,5 @@
 {
-  "name": "fs/read",
+  "name": "fs.read",
   "description": "Read the content of a file. The path must be relative to the project root, e.g. src/main.ts or README.md.",
   "entry": "index.ts",
   "parameters": {
