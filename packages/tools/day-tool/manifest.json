@@ -1,7 +1,7 @@
 {
   "name": "day.get",
   "description": "Returns the current day of the week",
-  "importPath": "day/barrel.ts",
+  "importPath": "day/index.ts",
   "inputSchema": {
     "type": "object",
     "properties": {},
