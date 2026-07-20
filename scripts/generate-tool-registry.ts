@@ -1,6 +1,6 @@
 /**
  * @file scripts/generate-tool-registry.ts
- * @description Scans tool manifests, validates MCP tool names, and updates registry.json if changed.
+ * @description Scans tool manifests, validates MCP tool names, and updates registry.json.
  */
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
@@ -24,6 +24,12 @@ interface RegistryEntry {
   inputSchema: Record<string, unknown>;
 }
 
+interface ValidationError {
+  manifestPath: string;
+  invalidName: string;
+  expectedName: string;
+}
+
 async function findManifests(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { recursive: true, withFileTypes: true });
   return entries
@@ -31,25 +37,30 @@ async function findManifests(dir: string): Promise<string[]> {
     .map((e) => join(e.parentPath, e.name));
 }
 
-function validateToolName(name: string, manifestPath: string) {
-  if (!MCP_TOOL_NAME_REGEX.test(name)) {
-    throw new Error(
-      `Invalid MCP tool name "${name}" in ${manifestPath}. Names must match ${MCP_TOOL_NAME_REGEX}`
-    );
-  }
+function validateToolName(name: string): boolean {
+  return MCP_TOOL_NAME_REGEX.test(name);
 }
 
 async function generateRegistry() {
   const manifestPaths = await findManifests(TOOLS_DIR);
   const registry: RegistryEntry[] = [];
+  const errors: ValidationError[] = [];
 
   for (const manifestPath of manifestPaths) {
     const raw = await readFile(manifestPath, "utf-8");
     const manifest: ToolManifest = JSON.parse(raw);
+    const relPath = relative(TOOLS_DIR, manifestPath);
 
-    validateToolName(manifest.name, relative(TOOLS_DIR, manifestPath));
+    // Validate tool name without crashing early
+    if (!validateToolName(manifest.name)) {
+      errors.push({
+        manifestPath: relPath,
+        invalidName: manifest.name,
+        expectedName: manifest.name.replaceAll("/", ".")
+      });
+      continue;
+    }
 
-    // Calculate relative import path from packages/tools directory
     const toolDir = relative(TOOLS_DIR, join(manifestPath, ".."));
     const importPath = join(toolDir, manifest.entry || "index.ts");
 
@@ -61,12 +72,23 @@ async function generateRegistry() {
     });
   }
 
-  // Sort deterministically by tool name
+  // Report all validation failures cleanly before exiting
+  if (errors.length > 0) {
+    console.error(`\n❌ Found ${errors.length} invalid tool name(s) in manifests:\n`);
+    for (const err of errors) {
+      console.error(`  • ${err.manifestPath}`);
+      console.error(`    Current:  "${err.invalidName}"`);
+      console.error(`    Expected: "${err.expectedName}"\n`);
+    }
+    console.error(`Names must match regex: ${MCP_TOOL_NAME_REGEX}`);
+    process.exit(1);
+  }
+
+  // Sort deterministically
   registry.sort((a, b) => a.name.localeCompare(b.name));
 
   const newContent = JSON.stringify(registry, null, 2) + "\n";
 
-  // Check existing registry content to detect if anything changed
   let existingContent = "";
   try {
     existingContent = await readFile(REGISTRY_PATH, "utf-8");
@@ -84,6 +106,6 @@ async function generateRegistry() {
 }
 
 generateRegistry().catch((err) => {
-  console.error("❌ Registry generation failed:", err);
+  console.error("❌ Unexpected script error:", err);
   process.exit(1);
 });
