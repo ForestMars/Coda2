@@ -3,7 +3,7 @@
     "name": "smoke",
     "description": "A sanity check tool to verify tool-calling is working. Triggered when the user asks what day it is.",
     "entry": "index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "query": {
@@ -21,7 +21,7 @@
     "name": "github/create_issue",
     "description": "Files a new issue in a GitHub repository.",
     "entry": "./index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "title": {
@@ -47,7 +47,7 @@
     "name": "github/search_issues",
     "description": "Search for GitHub issues in the repository.",
     "entry": "./index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "query": {
@@ -74,7 +74,7 @@
     "name": "github/comment_issue",
     "description": "Adds a comment to an existing GitHub issue.",
     "entry": "./index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "issue_number": {
@@ -97,7 +97,7 @@
     "name": "fs/write",
     "description": "Write content to a file. The path must be relative to the project root, e.g. src/main.ts or README.md. Never use absolute paths or placeholder paths like /path/to/file.",
     "entry": "index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "path": {
@@ -120,7 +120,7 @@
     "name": "fs/read",
     "description": "Read the content of a file. The path must be relative to the project root, e.g. src/main.ts or README.md.",
     "entry": "index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "path": {
@@ -138,7 +138,7 @@
     "name": "fs/bash",
     "description": "Run a shell command in the project root directory.",
     "entry": "index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "command": {
@@ -156,7 +156,7 @@
     "name": "fs/glob",
     "description": "List files in the project matching a pattern, e.g. *.ts or *.json.",
     "entry": "index.ts",
-    "parameters": {
+    "inputSchema": {
       "type": "object",
       "properties": {
         "pattern": {
