@@ -1,58 +1,89 @@
-// scripts/generate-tool-registry.ts
-import { readdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+/**
+ * @file scripts/generate-tool-registry.ts
+ * @description Scans tool manifests, validates MCP tool names, and updates registry.json if changed.
+ */
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import { join, relative } from "node:path";
 
-const TOOLS_ROOT = path.join(process.cwd(), "packages/tools");
-const OUTPUT_FILE = path.join(TOOLS_ROOT, "registry.json");
+const TOOLS_DIR = join(import.meta.dir, "../packages/tools");
+const REGISTRY_PATH = join(TOOLS_DIR, "registry.json");
+const MCP_TOOL_NAME_REGEX = /^[A-Za-z0-9_.-]+$/;
 
-async function generate() {
-  const tools: any[] = [];
-
-  async function scan(dir: string) {
-    const entries = await readdir(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      
-      if (entry.isDirectory()) {
-        if (entry.name === "node_modules") continue;
-        
-        try {
-          const manifestPath = path.join(fullPath, "manifest.json");
-          const manifestFile = Bun.file(manifestPath);
-          
-          if (await manifestFile.exists()) {
-            const content = await manifestFile.json();
-            
-            // Map parameters/input_schema to standard MCP inputSchema
-            const schema = content.inputSchema || content.parameters || content.input_schema || { type: "object", properties: {} };
-
-            // Clean up old non-standard keys so registry stays strict
-            delete content.parameters;
-            delete content.input_schema;
-
-            const relativePath = path.relative(TOOLS_ROOT, path.join(fullPath, content.entry || "index.ts"));
-
-            tools.push({
-              ...content,
-              inputSchema: schema,
-              importPath: relativePath.replace(/\\/g, '/')
-            });
-            continue; 
-          }
-        } catch (e) {
-          // No manifest here, keep digging
-        }
-        
-        await scan(fullPath);
-      }
-    }
-  }
-
-  await scan(TOOLS_ROOT);
-  
-  await writeFile(OUTPUT_FILE, JSON.stringify(tools, null, 2));
-  console.log(`🚀 Registry generated: ${tools.length} tools found.`);
+interface ToolManifest {
+  name: string;
+  description: string;
+  entry: string;
+  inputSchema?: Record<string, unknown>;
+  parameters?: Record<string, unknown>;
 }
 
-generate().catch(console.error);
+interface RegistryEntry {
+  name: string;
+  description: string;
+  importPath: string;
+  inputSchema: Record<string, unknown>;
+}
+
+async function findManifests(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((e) => e.isFile() && e.name === "manifest.json")
+    .map((e) => join(e.parentPath, e.name));
+}
+
+function validateToolName(name: string, manifestPath: string) {
+  if (!MCP_TOOL_NAME_REGEX.test(name)) {
+    throw new Error(
+      `Invalid MCP tool name "${name}" in ${manifestPath}. Names must match ${MCP_TOOL_NAME_REGEX}`
+    );
+  }
+}
+
+async function generateRegistry() {
+  const manifestPaths = await findManifests(TOOLS_DIR);
+  const registry: RegistryEntry[] = [];
+
+  for (const manifestPath of manifestPaths) {
+    const raw = await readFile(manifestPath, "utf-8");
+    const manifest: ToolManifest = JSON.parse(raw);
+
+    validateToolName(manifest.name, relative(TOOLS_DIR, manifestPath));
+
+    // Calculate relative import path from packages/tools directory
+    const toolDir = relative(TOOLS_DIR, join(manifestPath, ".."));
+    const importPath = join(toolDir, manifest.entry || "index.ts");
+
+    registry.push({
+      name: manifest.name,
+      description: manifest.description,
+      importPath,
+      inputSchema: manifest.inputSchema || manifest.parameters || {}
+    });
+  }
+
+  // Sort deterministically by tool name
+  registry.sort((a, b) => a.name.localeCompare(b.name));
+
+  const newContent = JSON.stringify(registry, null, 2) + "\n";
+
+  // Check existing registry content to detect if anything changed
+  let existingContent = "";
+  try {
+    existingContent = await readFile(REGISTRY_PATH, "utf-8");
+  } catch {
+    // registry.json does not exist yet
+  }
+
+  if (existingContent === newContent) {
+    console.log(`ℹ️ Registry unchanged (${registry.length} tools up to date). [no-op]`);
+    return;
+  }
+
+  await writeFile(REGISTRY_PATH, newContent, "utf-8");
+  console.log(`🚀 Registry updated: ${registry.length} tools registered -> packages/tools/registry.json`);
+}
+
+generateRegistry().catch((err) => {
+  console.error("❌ Registry generation failed:", err);
+  process.exit(1);
+});
