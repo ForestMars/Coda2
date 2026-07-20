@@ -1,3 +1,4 @@
+// scripts/generate-tool-registry.ts
 import { readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -7,8 +8,6 @@ const OUTPUT_FILE = path.join(TOOLS_ROOT, "registry.json");
 async function generate() {
   const tools: any[] = [];
 
-  // We look specifically for gh-tools or any subfolders in packages/tools
-  // This supports your nested github/create_issue structure
   async function scan(dir: string) {
     const entries = await readdir(dir, { withFileTypes: true });
 
@@ -18,23 +17,28 @@ async function generate() {
       if (entry.isDirectory()) {
         if (entry.name === "node_modules") continue;
         
-        // If we find a manifest, this is a tool
         try {
           const manifestPath = path.join(fullPath, "manifest.json");
           const manifestFile = Bun.file(manifestPath);
           
           if (await manifestFile.exists()) {
             const content = await manifestFile.json();
+            
+            // Map parameters/input_schema to standard MCP inputSchema
+            const schema = content.inputSchema || content.parameters || content.input_schema || { type: "object", properties: {} };
+
+            // Clean up old non-standard keys so registry stays strict
+            delete content.parameters;
+            delete content.input_schema;
+
+            const relativePath = path.relative(TOOLS_ROOT, path.join(fullPath, content.entry || "index.ts"));
+
             tools.push({
               ...content,
-              // Relative path for the runtime loader to use
-              importPath: path.relative(TOOLS_ROOT, path.join(fullPath, content.entry || "index.ts"))
-              // Even better: 
-              // importPath: path.relative(TOOLS_ROOT, path.join(fullPath, content.entry || "index.ts")).replace(/\\/g, '/')
-
-
+              inputSchema: schema,
+              importPath: relativePath.replace(/\\/g, '/')
             });
-            continue; // Found a tool, no need to go deeper into this specific folder
+            continue; 
           }
         } catch (e) {
           // No manifest here, keep digging
