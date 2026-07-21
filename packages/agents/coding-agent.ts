@@ -14,6 +14,7 @@ import { readFileSync } from 'fs';
 import type { AgentSession, AgentEvent, AgentStep } from '@sup/types/types';
 import { logger } from '@sup/infra/logger';
 import { tools as registry, runTool } from '@sup/tools';
+import { filterToolsForAgent } from './agent-tool-registry';
 
 const ROUTER_MODEL = 'qwen3:8b';
 const CODER_MODEL = process.env.CODING_AGENT_MODEL || 'qwen2.5-coder:14b';
@@ -26,8 +27,7 @@ const instructions = readFileSync(
   'utf-8'
 ).replace('{CWD}', CWD);
 
-const FS_TOOLS = ['fs/write', 'fs/read', 'fs/bash', 'fs/glob'];
-const fsRegistry = registry.filter((t) => FS_TOOLS.includes(t.name));
+const toolRegistry = filterToolsForAgent(registry, 'coding');
 
 function toToolKey(name: string): string {
   return name.replace('/', '_');
@@ -54,7 +54,7 @@ async function needsTools(userInput: string, history: string): Promise<boolean> 
   const response = await generateText({
     model: ollama(ROUTER_MODEL),
     temperature: 0,
-    system: `You are a router. Decide if the user's request requires reading or writing files, running shell commands, or executing code.
+    system: `You are a router. Decide if the user's request requires tool use: reading or writing files, running shell commands, executing code, creating/searching/updating GitHub issues, or other external actions.
 Reply with only "yes" or "no".`,
     prompt: history ? `${history}\nUser: ${userInput}` : userInput,
   });
@@ -205,14 +205,18 @@ export async function* codingAgent(
   logger.debug({ model: CODER_MODEL }, '[codingAgent] tool path');
 
   const toolsMap = Object.fromEntries(
-    fsRegistry.map((t) => [
-      toToolKey(t.name),
-      {
-        description: t.description,
-        parameters: t.parameters,
-        execute: async (args: any) => runTool(t.name, args),
-      },
-    ])
+    toolRegistry.map((t) => {
+      // Only transform FS tool names; keep others (like github/*) as-is
+      const toolKey = t.name.startsWith('fs/') ? toToolKey(t.name) : t.name;
+      return [
+        toolKey,
+        {
+          description: t.description,
+          parameters: t.parameters,
+          execute: async (args: any) => runTool(t.name, args),
+        },
+      ];
+    })
   );
 
   logger.debug({ toolKeys: Object.keys(toolsMap) }, '[codingAgent] registered tools');
@@ -293,8 +297,9 @@ export async function* codingAgent(
         try {
           const parsed = JSON.parse(jsonMatch[0]);
           const toolKey = parsed.name || parsed.tool || parsed.toolName;
-          const originalName = fromToolKey(toolKey);
-          const toolDef = fsRegistry.find((t) => t.name === originalName);
+          // Try both: if it looks like an FS tool (fs_*), convert back; otherwise use as-is
+          const originalName = toolKey.startsWith('fs_') ? fromToolKey(toolKey) : toolKey;
+          const toolDef = toolRegistry.find((t) => t.name === originalName);
           const args = parsed.arguments ?? parsed.parameters ?? parsed.args;
           logger.debug({ toolKey, originalName, hasToolDef: !!toolDef, args }, '[codingAgent] regex fallback parsed');
 
