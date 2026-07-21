@@ -1,4 +1,5 @@
 {
+  "status": "inactive",
   "name": "github.get_repo_info",
   "description": "Get the GitHub repository (owner and name) that ticket operations will target. Use this to discover which repository the agent is configured to work with.",
   "entry": "index.ts",
