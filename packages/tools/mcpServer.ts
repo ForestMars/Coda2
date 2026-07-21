@@ -1,4 +1,4 @@
-/* MCP Streamable HTTP server 
+/** MCP Streamable HTTP server 
  *
  * @File: packages/tools/mcpServer.ts
  *
