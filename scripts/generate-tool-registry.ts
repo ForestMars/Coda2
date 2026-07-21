@@ -207,12 +207,12 @@ async function generateRegistry(): Promise<void> {
   }
 
   if (existingContent === newContent) {
-    console.log(`ℹ️ Registry unchanged (${registry.length} active tools out of ${totalManifests} loaded). [no-op]`);
+    console.log(`Registry unchanged (${registry.length} active tools out of ${totalManifests} loaded). [no-op]`);
     return;
   }
 
   await writeFile(REGISTRY_PATH, newContent, "utf-8");
-  console.log(`🚀 Registry updated: ${registry.length} active tools out of ${totalManifests} loaded -> packages/tools/registry.json`);
+  console.log(`🛠️ Registry updated: ${registry.length} active tools out of ${totalManifests} loaded -> packages/tools/registry.json`);
 }
 
 generateRegistry().catch((err) => {
