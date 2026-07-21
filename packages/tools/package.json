@@ -12,5 +12,9 @@
     },
     "./order-tools": "./order-tools.ts",
     "./tools": "./tools/index.ts"
+  },
+  "scripts": {
+    "server": "bun run mcpServer.ts"
   }
 }
+

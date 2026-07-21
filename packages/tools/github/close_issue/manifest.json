@@ -1,0 +1,12 @@
+{
+  "name": "github.closes_issue",
+  "description": "Closes an existing issue in a GitHub repository.",
+  "entry": "./index.ts",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "issue_number": { "type": "number", "description": "The issue number to close" }
+    },
+    "required": ["issue_number"]
+  }
+}

@@ -1,6 +1,6 @@
 /**
- * @file index.ts
- * @description Central registry for all tools.
+ * @file packages/tools/index.ts
+ * @description Central registry for all support tools.
  */
 import registry from "./registry.json" assert { type: "json" };
 import { runTool } from "./loader";

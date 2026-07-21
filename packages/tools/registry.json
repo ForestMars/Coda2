@@ -1,48 +1,19 @@
 [
   {
-    "name": "smoke",
-    "description": "A sanity check tool to verify tool-calling is working. Triggered when the user asks what day it is.",
-    "entry": "index.ts",
-    "modes": [
-      "support"
-    ],
-    "parameters": {
+    "name": "day.get",
+    "description": "Returns the current day of the week",
+    "importPath": "day-tool/index.ts",
+    "inputSchema": {
       "type": "object",
-      "properties": {
-        "query": {
-          "type": "string",
-          "description": "The user's question about the date or time"
-        }
-      },
-      "required": [
-        "query"
-      ]
-    },
-    "importPath": "smoke/index.ts"
+      "properties": {},
+      "additionalProperties": false
+    }
   },
   {
-    "name": "fs/read",
-    "description": "Read the content of a file. The path must be relative to the project root, e.g. src/main.ts or README.md.",
-    "entry": "index.ts",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string",
-          "description": "Relative path from the project root, e.g. src/main.ts"
-        }
-      },
-      "required": [
-        "path"
-      ]
-    },
-    "importPath": "fs/read/index.ts"
-  },
-  {
-    "name": "fs/bash",
+    "name": "fs.bash",
     "description": "Run a shell command in the project root directory.",
-    "entry": "index.ts",
-    "parameters": {
+    "importPath": "fs/bash/index.ts",
+    "inputSchema": {
       "type": "object",
       "properties": {
         "command": {
@@ -53,14 +24,13 @@
       "required": [
         "command"
       ]
-    },
-    "importPath": "fs/bash/index.ts"
+    }
   },
   {
-    "name": "fs/glob",
+    "name": "fs.glob",
     "description": "List files in the project matching a pattern, e.g. *.ts or *.json.",
-    "entry": "index.ts",
-    "parameters": {
+    "importPath": "fs/glob/index.ts",
+    "inputSchema": {
       "type": "object",
       "properties": {
         "pattern": {
@@ -71,14 +41,30 @@
       "required": [
         "pattern"
       ]
-    },
-    "importPath": "fs/glob/index.ts"
+    }
   },
   {
-    "name": "fs/write",
+    "name": "fs.read",
+    "description": "Read the content of a file. The path must be relative to the project root, e.g. src/main.ts or README.md.",
+    "importPath": "fs/read/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative path from the project root, e.g. src/main.ts"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  },
+  {
+    "name": "fs.write",
     "description": "Write content to a file. The path must be relative to the project root, e.g. src/main.ts or README.md. Never use absolute paths or placeholder paths like /path/to/file.",
-    "entry": "index.ts",
-    "parameters": {
+    "importPath": "fs/write/index.ts",
+    "inputSchema": {
       "type": "object",
       "properties": {
         "path": {
@@ -94,14 +80,30 @@
         "path",
         "content"
       ]
-    },
-    "importPath": "fs/write/index.ts"
+    }
   },
   {
-    "name": "github/comment_issue",
+    "name": "github.closes_issue",
+    "description": "Closes an existing issue in a GitHub repository.",
+    "importPath": "github/close_issue/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "issue_number": {
+          "type": "number",
+          "description": "The issue number to close"
+        }
+      },
+      "required": [
+        "issue_number"
+      ]
+    }
+  },
+  {
+    "name": "github.comment_issue",
     "description": "Adds a comment to an existing GitHub issue.",
-    "entry": "./index.ts",
-    "parameters": {
+    "importPath": "github/comment_issue/index.ts",
+    "inputSchema": {
       "type": "object",
       "properties": {
         "issue_number": {
@@ -117,14 +119,38 @@
         "issue_number",
         "body"
       ]
-    },
-    "importPath": "github/comment_issue/index.ts"
+    }
   },
   {
-    "name": "github/search_issues",
+    "name": "github.create_issue",
+    "description": "Files a new issue in a GitHub repository.",
+    "importPath": "github/create_issue/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "title"
+      ]
+    }
+  },
+  {
+    "name": "github.search_issues",
     "description": "Search for GitHub issues in the repository.",
-    "entry": "./index.ts",
-    "parameters": {
+    "importPath": "github/search_issues/index.ts",
+    "inputSchema": {
       "type": "object",
       "properties": {
         "query": {
@@ -144,47 +170,23 @@
       "required": [
         "query"
       ]
-    },
-    "importPath": "github/search_issues/index.ts"
+    }
   },
   {
-    "name": "github/get_repo_info",
-    "description": "Get the GitHub repository (owner and name) that ticket operations will target. Use this to discover which repository the agent is configured to work with.",
-    "entry": "index.ts",
-    "parameters": {
-      "type": "object",
-      "properties": {},
-      "required": []
-    },
-    "importPath": "github/get_repo_info/index.ts"
-  },
-  {
-    "name": "github/create_issue",
-    "description": "Create a new GitHub issue in the configured repository. REQUIRED: title. OPTIONAL: body (description), labels (tags for the issue).",
-    "entry": "./index.ts",
-    "parameters": {
+    "name": "smoke",
+    "description": "A sanity check tool to verify tool-calling is working. Triggered when the user asks what day it is.",
+    "importPath": "smoke/index.ts",
+    "inputSchema": {
       "type": "object",
       "properties": {
-        "title": {
+        "query": {
           "type": "string",
-          "description": "Brief title for the issue (required). Example: 'Fix login button styling' or 'Add email validation'"
-        },
-        "body": {
-          "type": "string",
-          "description": "Detailed description of the issue (optional). Include context, steps to reproduce, or desired behavior."
-        },
-        "labels": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Tags to categorize the issue (optional). Examples: 'bug', 'feature', 'docs', 'enhancement'"
+          "description": "The user's question about the date or time"
         }
       },
       "required": [
-        "title"
+        "query"
       ]
-    },
-    "importPath": "github/create_issue/index.ts"
+    }
   }
 ]

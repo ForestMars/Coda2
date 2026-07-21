@@ -1,5 +1,5 @@
 {
-  "name": "github/search_issues",
+  "name": "github.search_issues",
   "description": "Search for GitHub issues in the repository.",
   "entry": "./index.ts",
   "parameters": {

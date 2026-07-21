@@ -1,5 +1,5 @@
 {
-  "name": "fs/glob",
+  "name": "fs.glob",
   "description": "List files in the project matching a pattern, e.g. *.ts or *.json.",
   "entry": "index.ts",
   "parameters": {

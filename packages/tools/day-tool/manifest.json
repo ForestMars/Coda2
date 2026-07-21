@@ -1,0 +1,10 @@
+{
+  "name": "day.get",
+  "description": "Returns the current day of the week",
+  "importPath": "day/index.ts",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  }
+}

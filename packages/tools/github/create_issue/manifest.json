@@ -1,5 +1,5 @@
 {
-  "name": "github/create_issue",
+  "name": "github.create_issue",
   "description": "Create a new GitHub issue in the configured repository. REQUIRED: title. OPTIONAL: body (description), labels (tags for the issue).",
   "entry": "./index.ts",
   "parameters": {

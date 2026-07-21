@@ -1,5 +1,5 @@
 {
-  "name": "github/comment_issue",
+  "name": "github.comment_issue",
   "description": "Adds a comment to an existing GitHub issue.",
   "entry": "./index.ts",
   "parameters": {

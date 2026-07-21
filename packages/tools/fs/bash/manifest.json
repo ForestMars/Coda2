@@ -1,5 +1,5 @@
 {
-  "name": "fs/bash",
+  "name": "fs.bash",
   "description": "Run a shell command in the project root directory.",
   "entry": "index.ts",
   "parameters": {

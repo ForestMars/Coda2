@@ -26,19 +26,17 @@
     "sup": "AGENT_TYPE=support bun --env-file=.auth apps/cli/chat.ts",
     "tui": "TUI_MODE=1 bun --env-file=.auth apps/tui/index.tsx",
     "tui:debug": "AGENT_TYPE=coding bun --env-file=.auth apps/tui/index.tsx",
-  
     "build": "bun run type-check && vite build",
     "build:ci": "bun run build && bun run test:ci",
     "build:dev": "vite build --mode development",
     "prebuild": "bun scripts/generate-tool-registry.ts",
     "preview": "vite preview",
-    
     "lint": "eslint . --cache --max-warnings 0",
     "lint:fix": "eslint . --cache --fix --max-warnings 0",
     "test:bail": "bun test --coverage --bail ./packages/**/*.test.ts",
     "test:cov": "bun test --coverage ./src/**/*.test.ts ./tests/**/*.test.ts",
     "test:e2e": "bun test ./tests/e2e/e2e.test.ts",
-    "test:report": "bun test ./tests/unit/*.test.ts --reporter=junit --no-cache --reporter-outfile", // pass [filepath]
+    "test:report": "bun test ./tests/unit/*.test.ts --reporter=junit --no-cache --reporter-outfile",
     "test:watch": "bun test --watch",
     "tests": "bun test ./tests/**/*.test.ts",
     "tests:int": "bun test ./tests/integration/*.test.ts",
@@ -49,8 +47,7 @@
     "clean:fr": "find . -name 'dist' -type d -prune -exec rm -rf {} + && find . -name '*.tsbuildinfo' -delete && tsc --build --clean",
     "clean:nuke": "find . -type f \\( -name '*.js' -o -name '*.d.ts' -o -name '*.d.ts.map' -o -name '*.js.map' -o -name '*.tsbuildinfo' \\) -not -path '*/node_modules/*' -delete && find . -name 'dist' -type d -prune -exec rm -rf {} +",
     "reinstall": "bun pm cache rm && rm -rf node_modules && bun install",
-    "rebuild": "bun run clean:dist && bun run clean:tsbuildinfo && bun tsc --build --force", 
-    
+    "rebuild": "bun run clean:dist && bun run clean:tsbuildinfo && bun tsc --build --force",
     "tui:coda": "TUI_MODE=1 AGENT=coding bun --env-file=.auth apps/tui/index.tsx"
   },
   "keywords": [],
@@ -58,6 +55,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@cfworker/json-schema": "^4.1.1",
+    "@modelcontextprotocol/server": "^2.0.0-beta.4",
     "@openfeature/core": "1.9.2",
     "@openfeature/flagd-provider": "^0.13.4",
     "@openfeature/server-sdk": "1.20.2",
@@ -76,7 +75,7 @@
     "pino-loki": "^2.3.0",
     "pino-opentelemetry-transport": "^3.0.0",
     "posthog-node": "^5.26.2",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
