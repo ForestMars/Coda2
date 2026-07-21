@@ -1,19 +1,17 @@
-// MCP Streamable HTTP server — Bun + @modelcontextprotocol/server (v2, beta)
-// Confirmed installed: @modelcontextprotocol/server@2.0.0-beta.4
-//
-// Uses createMcpHandler, the SDK's documented entry point for HTTP
-// deployments: it serves 2026-07-28 per request and falls back to
-// 2025-11-25 handshake behavior for older clients on the same endpoint.
-// handler.fetch is (Request) => Promise<Response>, so it plugs into
-// Bun.serve directly with no framework in between.
-//
-// REQUIRES: bun add @cfworker/json-schema  (confirmed NOT currently
-// installed — fromJsonSchema() will throw at import until this is added)
-//
-// Run: bun run mcpServer.ts
-
-// MCP Streamable HTTP server — Bun + @modelcontextprotocol/server (v2, beta)
-// Complete Replacement with Robust Schema Guardrails & Debugging
+/* MCP Streamable HTTP server 
+ *
+ * @File: packages/tools/mcpServer.ts
+ *
+ * @Requires: bun add @cfworker/json-schema @modelcontextprotocol/server@2.0.0-beta.4
+ * 
+ * Uses createMcpHandler, the SDK's documented entry point for HTTP
+ * deployments: it serves 2026-07-28 per request and falls back to
+ * 2025-11-25 handshake behavior for older clients on the same endpoint.
+ * handler.fetch is (Request) => Promise<Response>, so it plugs into
+ * Bun.serve directly with no framework in between.
+ *
+ * Run: bun run mcpServer.ts
+ */ 
 import path from 'node:path';
 
 import {
@@ -28,9 +26,7 @@ import {
 
 import registryData from './registry.json';
 
-// ============================================================================
 // DEBUG LOGGING CONFIGURATION & HELPERS
-// ============================================================================
 const DEBUG = true; // Set to false to disable verbose debug logging
 
 function logDebug(section: string, message: string, data?: unknown) {
@@ -188,9 +184,7 @@ function getLoadedTools(): Promise<LoadedTool[]> {
     return loadedToolsPromise;
 }
 
-// ============================================================================
 // SERVER FACTORY & TOOL EXECUTION
-// ============================================================================
 async function buildServer(): Promise<McpServer> {
     // logDebug('SERVER_BUILD', 'buildServer() invoked (constructing new McpServer instance)'); // much higher debug level!
     const server = new McpServer({ name: 'coda2-tools-server', version: '1.0.0' });
@@ -260,9 +254,7 @@ const handler = createMcpHandler(buildServer, {
     }
 });
 
-// ============================================================================
 // HTTP SERVER & REQUEST / RESPONSE TRACING
-// ============================================================================
 const MCP_PATH = '/mcp';
 const PORT = Number(process.env.PORT ?? 5555);
 
