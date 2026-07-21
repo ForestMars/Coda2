@@ -123,22 +123,25 @@
   },
   {
     "name": "github.create_issue",
-    "description": "Files a new issue in a GitHub repository.",
+    "description": "Create a new GitHub issue in the configured repository. REQUIRED: title. OPTIONAL: body (description), labels (tags for the issue).",
     "importPath": "github/create_issue/index.ts",
     "inputSchema": {
       "type": "object",
       "properties": {
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "Brief title for the issue (required). Example: 'Fix login button styling' or 'Add email validation'"
         },
         "body": {
-          "type": "string"
+          "type": "string",
+          "description": "Detailed description of the issue (optional). Include context, steps to reproduce, or desired behavior."
         },
         "labels": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Tags to categorize the issue (optional). Examples: 'bug', 'feature', 'docs', 'enhancement'"
         }
       },
       "required": [
