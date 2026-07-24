@@ -1,8 +1,7 @@
 /** MCP Streamable HTTP server 
  *
- * @File: packages/tools/mcpServer.ts
+ * @file: packages/tools/mcpServer.ts
  *
- * @Requires: bun add @cfworker/json-schema @modelcontextprotocol/server@2.0.0-beta.4
  * 
  * Uses createMcpHandler, the SDK's documented entry point for HTTP
  * deployments: it serves 2026-07-28 per request and falls back to
@@ -12,6 +11,22 @@
  *
  * Run: bun run mcpServer.ts
  */ 
+
+/**
+ * @fileoverview: MCP Streamable HTTP server implementation.
+ * 
+ * Uses `createMcpHandler`, the SDK's documented entry point for HTTP
+ * deployments: it serves 2026-07-28 per request and falls back to
+ * 2025-11-25 handshake behavior for older clients on the same endpoint.
+ * `handler.fetch` is `(Request) => Promise<Response>`, so it plugs into
+ * Bun.serve directly with no framework in between.
+ * 
+ * @requires: bun add @cfworker/json-schema @modelcontextprotocol/server@2.0.0-beta.4
+ * 
+ * @remarks
+ * Run with: `bun run packages/tools/mcpServer.ts`
+ */
+
 import path from 'node:path';
 
 import {
@@ -26,10 +41,17 @@ import {
 
 import registryData from './registry.json';
 
-// DEBUG LOGGING CONFIGURATION & HELPERS
-const DEBUG = true; // Set to false to disable verbose debug logging
+/** Enable or disable verbose debug logging to standard output. */
+const DEBUG = true;
 
-function logDebug(section: string, message: string, data?: unknown) {
+/**
+ * Logs structured debug messages to `console.log` when {@link DEBUG} is enabled.
+ *
+ * @param section - The subsystem or area issuing the log (e.g., `'STARTUP'`, `'REGISTRY'`).
+ * @param message - High-level description of the event.
+ * @param data - Optional arbitrary payload to serialize and log alongside the message.
+ */
+function logDebug(section: string, message: string, data?: unknown): void {
     if (!DEBUG) return;
     const timestamp = new Date().toISOString();
     const prefix = `[DEBUG ${timestamp}] [${section}]`;
@@ -40,7 +62,14 @@ function logDebug(section: string, message: string, data?: unknown) {
     }
 }
 
-function logError(section: string, message: string, error?: unknown) {
+/**
+ * Logs error details and optional stack traces to `console.error`.
+ *
+ * @param section - The subsystem or area where the failure occurred.
+ * @param message - High-level context of the error.
+ * @param error - The caught error instance, rejection reason, or error payload.
+ */
+function logError(section: string, message: string, error?: unknown): void {
     const timestamp = new Date().toISOString();
     const prefix = `[ERROR ${timestamp}] [${section}]`;
     if (error instanceof Error) {
@@ -71,15 +100,23 @@ logDebug('STARTUP', 'Initializing MCP Server Environment', {
     envPort: process.env.PORT ?? '5555 (default)'
 });
 
-// ============================================================================
-// REGISTRY & TOOL LOADING
-// ============================================================================
+
+// ♢♢♢ REGISTRY & TOOL LOADING ♢♢♢
+
+/**
+ * Represents a tool entry defined in `registry.json`.
+ */
 interface RegistryEntry {
+    /** Unique identifier/name of the tool. */
     name: string;
+    /** Human-readable explanation of what the tool does. */
     description: string;
+    /** Relative execution entry point. */
     entry: string;
-    inputSchema: Record<string, unknown>; // raw JSON Schema from manifest.json
-    importPath: string; // relative to packages/tools
+    /** Raw JSON Schema defining expected parameters. */
+    inputSchema: Record<string, unknown>;
+    /** Relative import path under `packages/tools`. */
+    importPath: string;
 }
 
 const registry = registryData as RegistryEntry[];
@@ -91,14 +128,28 @@ logDebug('REGISTRY', 'Loaded raw registry.json', {
     rawEntryNames: registry.map((r) => r.name)
 });
 
+/**
+ * Standard function execution signature for a tool module.
+ *
+ * @param args - The validated dynamic arguments passed from the client.
+ * @returns The raw output or a promise resolving to the tool output.
+ */
 type ToolFn = (args: unknown) => Promise<unknown> | unknown;
 
+/**
+ * Represents a fully loaded tool with its metadata and executable function.
+ */
 interface LoadedTool extends RegistryEntry {
+    /** The imported dynamic handler function (exported as `run`). */
     fn: ToolFn;
 }
 
 /**
- * Normalizes raw tool parameter schema to ensure AJV / fromJsonSchema receive a valid object.
+ * Normalizes raw tool parameter schema to ensure AJV and `fromJsonSchema` receive a valid object schema.
+ *
+ * @param params - The input schema object or undefined payload to validate.
+ * @param toolName - Name of the target tool for logging context.
+ * @returns A guaranteed valid JSON schema object with fallback default fields if missing.
  */
 function sanitizeSchema(params: unknown, toolName: string): Record<string, unknown> {
     if (!params || typeof params !== 'object' || Array.isArray(params)) {
@@ -122,6 +173,13 @@ function sanitizeSchema(params: unknown, toolName: string): Record<string, unkno
     return schemaObj;
 }
 
+/**
+ * Dynamically imports a tool module from the filesystem and extracts its `run` method.
+ *
+ * @param entry - Registry metadata for the tool to load.
+ * @returns A promise resolving to the fully loaded tool object.
+ * @throws {@link Error} If the module does not export an asynchronous or synchronous `run` function.
+ */
 async function loadTool(entry: RegistryEntry): Promise<LoadedTool> {
     const fullImportPath = path.join(TOOLS_ROOT, entry.importPath);
     logDebug('TOOL_LOAD', `Attempting import for tool "${entry.name}"`, {
@@ -153,6 +211,12 @@ async function loadTool(entry: RegistryEntry): Promise<LoadedTool> {
 
 let loadedToolsPromise: Promise<LoadedTool[]> | undefined;
 
+/**
+ * Singleton getter that memoizes and loads all registered tools while performing duplicate checks.
+ *
+ * @returns Promise resolving to an array of all validated, executable tools.
+ * @throws {@link Error} If duplicate tool names are found in `registry.json`.
+ */
 function getLoadedTools(): Promise<LoadedTool[]> {
     if (!loadedToolsPromise) {
         loadedToolsPromise = (async () => {
@@ -184,9 +248,14 @@ function getLoadedTools(): Promise<LoadedTool[]> {
     return loadedToolsPromise;
 }
 
-// SERVER FACTORY & TOOL EXECUTION
+// ♢♢♢ SERVER FACTORY & TOOL EXECUTION ♢♢♢
+
+/**
+ * Factory function to construct and populate an {@link McpServer} instance with all registered tools.
+ *
+ * @returns A fully initialized MCP server ready for handling incoming protocol queries.
+ */
 async function buildServer(): Promise<McpServer> {
-    // logDebug('SERVER_BUILD', 'buildServer() invoked (constructing new McpServer instance)'); // much higher debug level!
     const server = new McpServer({ name: 'coda2-tools-server', version: '1.0.0' });
     
     const tools = await getLoadedTools();
@@ -200,8 +269,10 @@ async function buildServer(): Promise<McpServer> {
             sanitizedSchema: safeSchema
         });
 
-        // Sanitize name to strictly conform to MCP naming standard (A-Z, a-z, 0-9, _, -, .)
-        const safeToolName = tool.name.replace(/\//g, '_');
+        /** Sanitize name to strictly conform to MCP naming standard (A-Z, a-z, 0-9, _, -, .)
+         * NB. generate-tool-registry.ts runs in strict mode, so tools with invald names will have been rejected
+         */
+       const safeToolName = tool.name.replace(/\//g, '_');
 
         server.registerTool(
             safeToolName,
@@ -254,7 +325,8 @@ const handler = createMcpHandler(buildServer, {
     }
 });
 
-// HTTP SERVER & REQUEST / RESPONSE TRACING
+// ♢♢♢ HTTP SERVER & REQUEST / RESPONSE TRACING ♢♢♢
+
 const MCP_PATH = '/mcp';
 const PORT = Number(process.env.PORT ?? 5555);
 
