@@ -13,6 +13,7 @@ import {
 import { logger } from '@sup/infra/logger';
 import type { AgentStep } from '@sup/types/agent-types';
 import { ProtocolResolver } from '@sup/lib/protocol-resolver';
+import { AgentRuntime } from '@sup/lib';
 import { adapters } from '@sup/tools';
 import { JsonFileProvider } from '@sup/infra/adapters/JsonFileProvider';
 
@@ -83,17 +84,31 @@ export async function startChat() {
       if (userInput.trim().toLowerCase() === 'exit') break;
 
       try {
+        const runtime = new AgentRuntime({
+          name: AGENT,
+          sessionId: session.id,
+          input: userInput,
+        });
+
         let generator = agent(userInput, session, {
           resolver: ProtocolResolver,
           tools: adapters,
         });
 
-      for (const adapterFn of activeAdapters) {
-        generator = adapterFn(generator);
-      }
+        for (const adapterFn of activeAdapters) {
+          generator = adapterFn(generator);
+        }
 
-    await renderStream(generator);
-  } catch (error) {
+        const renderState = { accumulated: '', firstToken: true };
+        await runtime.run(() => generator, {
+          onStep: (step) => {
+            if (process.env.LOG_STEPS === 'true') {
+              console.log(step);
+            }
+            renderStep(step, renderState);
+          },
+        });
+      } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error('Error in agent execution:', message);
     console.error('Full error:', error);
@@ -107,58 +122,48 @@ export async function startChat() {
   }
 }
 
-async function renderStream(
-  generator: AsyncGenerator<AgentStep, void, unknown>
-): Promise<void> {
-  let accumulated = '';
-  let firstToken = true;
+function renderStep(step: AgentStep, state: { accumulated: string; firstToken: boolean }) {
+  switch (step.type) {
+    case 'thinking':
+      if (STREAMING) process.stdout.write(`\n${step.message}\n`);
+      break;
 
-  for await (const step of generator) {
-    if (process.env.LOG_STEPS === "true") {
-      console.log(step);
-    }
-    switch (step.type) {
-      case 'thinking':
-        if (STREAMING) process.stdout.write(`\n${step.message}\n`);
-        break;
-
-      case 'text_delta':
-        if (STREAMING) {
-          if (firstToken) {
-            process.stdout.write('\nAgent: ');
-            firstToken = false;
-          }
-          if (step.delta) process.stdout.write(step.delta);
-        } else {
-          if (step.delta) accumulated += step.delta;
+    case 'text_delta':
+      if (STREAMING) {
+        if (state.firstToken) {
+          process.stdout.write('\nAgent: ');
+          state.firstToken = false;
         }
-        break;
+        if (step.delta) process.stdout.write(step.delta);
+      } else {
+        if (step.delta) state.accumulated += step.delta;
+      }
+      break;
 
-      case 'tool_call':
-        if (STREAMING) {
-          if (!firstToken) process.stdout.write('\n');
-          process.stdout.write(`[${step.toolId}] `);
-          firstToken = true;
+    case 'tool_call':
+      if (STREAMING) {
+        if (!state.firstToken) process.stdout.write('\n');
+        process.stdout.write(`[${step.toolId}] `);
+        state.firstToken = true;
+      }
+      break;
+
+    case 'tool_result':
+      if (STREAMING) process.stdout.write(`✓\n`);
+      break;
+
+    case 'final':
+      if (STREAMING) {
+        if (state.firstToken) {
+          process.stdout.write(`\nAgent: ${step.text}`);
         }
-        break;
-
-      case 'tool_result':
-        if (STREAMING) process.stdout.write(`✓\n`);
-        break;
-
-      case 'final':
-        if (STREAMING) {
-          if (firstToken) {
-            process.stdout.write(`\nAgent: ${step.text}`);
-          }
-          process.stdout.write('\n\n');
-        } else {
-          process.stdout.write(`\nAgent: ${accumulated || step.text}\n\n`);
-        }
-        accumulated = '';
-        firstToken = true;
-        break;
-    }
+        process.stdout.write('\n\n');
+      } else {
+        process.stdout.write(`\nAgent: ${state.accumulated || step.text}\n\n`);
+      }
+      state.accumulated = '';
+      state.firstToken = true;
+      break;
   }
 }
 

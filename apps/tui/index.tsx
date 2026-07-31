@@ -8,6 +8,7 @@ import {
 } from "@openfeature/server-sdk";
 
 import { ProtocolResolver } from "@sup/lib/protocol-resolver";
+import { AgentRuntime } from "@sup/lib";
 import { adapters } from "@sup/tools";
 import { JsonFileProvider } from "@sup/infra/adapters/JsonFileProvider";
 
@@ -78,27 +79,35 @@ function App() {
     setMessages((m) => [...m, { role: "user", text }]);
 
     try {
+      const runtime = new AgentRuntime({
+        name: AGENT,
+        sessionId: session.id,
+        input: text,
+      });
+
       const generator = currentAgent(text, session, {
         resolver: ProtocolResolver,
         tools: adapters,
       });
 
-      for await (const step of generator) {
-        if (step.type === "text_delta" && step.delta) {
-          setStreaming((s) => s + step.delta);
-        } else if (step.type === "tool_call") {
-          setActiveTool(step.toolId);
-        } else if (step.type === "tool_result") {
-          setActiveTool("");
-        } else if (step.type === "final") {
-          setMessages((m) => [
-            ...m,
-            { role: "agent", text: step.text || streaming() },
-          ]);
-          setStreaming("");
-          setActiveTool("");
-        }
-      }
+      await runtime.run(() => generator, {
+        onStep: (step) => {
+          if (step.type === "text_delta" && step.delta) {
+            setStreaming((s) => s + step.delta);
+          } else if (step.type === "tool_call") {
+            setActiveTool(step.toolId);
+          } else if (step.type === "tool_result") {
+            setActiveTool("");
+          } else if (step.type === "final") {
+            setMessages((m) => [
+              ...m,
+              { role: "agent", text: step.text || streaming() },
+            ]);
+            setStreaming("");
+            setActiveTool("");
+          }
+        },
+      });
     } catch (err) {
       setMessages((m) => [...m, { role: "agent", text: `Error: ${err}` }]);
     }
