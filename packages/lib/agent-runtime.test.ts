@@ -1,6 +1,40 @@
 import { test, expect } from 'bun:test';
-import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { AgentRuntime, AgentRuntimeStatus } from './agent-runtime';
+
+class FakeSpan {
+  public readonly attributes: Record<string, unknown> = {};
+  public status?: { code: number; message?: string };
+  public ended = false;
+  public readonly name: string;
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  setAttribute(key: string, value: unknown) {
+    this.attributes[key] = value;
+    return this;
+  }
+
+  setStatus(status: { code: number; message?: string }) {
+    this.status = status;
+    return this;
+  }
+
+  end() {
+    this.ended = true;
+  }
+}
+
+class FakeTracer {
+  public readonly spans: FakeSpan[] = [];
+
+  startSpan(name: string) {
+    const span = new FakeSpan(name);
+    this.spans.push(span);
+    return span;
+  }
+}
 
 async function* sampleAgent() {
   yield {
@@ -163,16 +197,13 @@ test('captures structured trace metadata and tool span duration', async () => {
 });
 
 test('emits otel spans for runtime steps', async () => {
-  const exporter = new InMemorySpanExporter();
-  const provider = new BasicTracerProvider();
-  provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
-  const tracer = provider.getTracer('agent-runtime-test');
+  const tracer = new FakeTracer();
 
   const runtime = new AgentRuntime({
     name: 'otel-runtime',
     sessionId: 'session-otel',
     input: 'otel please',
-    telemetry: { tracer },
+    telemetry: { tracer: tracer as any },
   });
 
   await runtime.run(async function* () {
@@ -197,8 +228,8 @@ test('emits otel spans for runtime steps', async () => {
     } as any;
   });
 
-  const spans = exporter.getFinishedSpans();
-  expect(spans.some((span) => span.name === 'agent.runtime')).toBe(true);
-  expect(spans.some((span) => span.name === 'agent.tool.call')).toBe(true);
-  expect(spans.some((span) => span.name === 'agent.final')).toBe(true);
+  expect(tracer.spans.some((span) => span.name === 'agent.runtime')).toBe(true);
+  expect(tracer.spans.some((span) => span.name === 'agent.tool.call')).toBe(true);
+  expect(tracer.spans.some((span) => span.name === 'agent.final')).toBe(true);
+  expect(tracer.spans.every((span) => span.ended)).toBe(true);
 });
