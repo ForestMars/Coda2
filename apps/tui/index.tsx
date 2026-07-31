@@ -107,6 +107,13 @@ function App() {
             setActiveTool("");
           }
         },
+        onSpan: (span) => {
+          if (span.name === "reasoning") {
+            setActiveTool(`reasoning: ${span.message}`);
+          } else if (span.name === "tool") {
+            setActiveTool(span.message);
+          }
+        },
       });
     } catch (err) {
       setMessages((m) => [...m, { role: "agent", text: `Error: ${err}` }]);

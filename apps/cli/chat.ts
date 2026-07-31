@@ -107,6 +107,11 @@ export async function startChat() {
             }
             renderStep(step, renderState);
           },
+          onSpan: (span) => {
+            if (process.env.LOG_STEPS === 'true') {
+              console.log('[span]', span);
+            }
+          },
         });
       } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

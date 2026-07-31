@@ -39,6 +39,13 @@ function App({ agent, session, resolver, adapters }) {
           setActiveTool("");
         }
       },
+      onSpan: (span) => {
+        if (span.name === "reasoning") {
+          setActiveTool(`reasoning: ${span.message}`);
+        } else if (span.name === "tool") {
+          setActiveTool(span.message);
+        }
+      },
     });
   }
 
