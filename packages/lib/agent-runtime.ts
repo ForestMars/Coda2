@@ -27,7 +27,7 @@ export interface AgentRuntimeSpan {
   traceId: string;
   spanId: string;
   parentSpanId?: string;
-  name: 'reasoning' | 'tool' | 'final';
+  name: 'root' | 'reasoning' | 'tool' | 'final';
   message: string;
   startedAt: number;
   endedAt?: number;
@@ -78,16 +78,19 @@ export interface AgentRuntimeFactory {
 
 export class AgentRuntime {
   public readonly runId: string;
+  public readonly rootSpanId: string;
   public readonly name: string;
   public readonly sessionId: string;
   public readonly input: string;
   public readonly metadata: Record<string, unknown>;
   public readonly state: AgentRuntimeState;
   public readonly runtimeMetadata: AgentRuntimeMetadata;
+
   private activeToolSpans = new Map<string, { spanId: string; startedAt: number; parameters?: unknown }>();
 
   constructor(options: AgentRuntimeRunOptions) {
     this.runId = `${options.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    this.rootSpanId = `root-${Math.random().toString(36).slice(2, 8)}`;
     this.name = options.name;
     this.sessionId = options.sessionId;
     this.input = options.input;
@@ -122,89 +125,101 @@ export class AgentRuntime {
 
     this.state.status = AgentRuntimeStatus.running;
 
+    // Log ROOT Span Start
+    logger.info({
+      eventType: 'span_start',
+      traceId: this.runId,
+      spanId: this.rootSpanId,
+      name: 'root',
+      agentName: this.name,
+      sessionId: this.sessionId,
+      model: this.runtimeMetadata.model,
+    }, `agent_run:start:${this.name}`);
+
+    let lastStepTime = startedAt;
+
     try {
       const generator = typeof agentFactory === 'function' && agentFactory.length > 0
         ? (agentFactory as AgentRuntimeFactory)(this.input, { id: this.sessionId, events: [], sessionId: this.sessionId }, this.metadata)
         : (agentFactory as () => AsyncGenerator<AgentStep, void, unknown>)();
 
       for await (const step of generator) {
+        const stepArrivedAt = Date.now();
         steps.push(step);
         callbacks?.onStep?.(step);
 
         if (step.type === 'thinking') {
-          const startedAt = Date.now();
           const reasoningMessage = typeof step.message === 'string' ? step.message : 'thinking';
-          const spanId = `span-${Math.random().toString(36).slice(2, 8)}`;
+          const spanId = `reason-${Math.random().toString(36).slice(2, 8)}`;
+          
+          // Calculate duration since the previous step ended
+          const durationMs = stepArrivedAt - lastStepTime;
+
           const span: AgentRuntimeSpan = {
             traceId: this.runId,
             spanId,
+            parentSpanId: this.rootSpanId,
             name: 'reasoning',
             message: reasoningMessage,
-            startedAt,
-            endedAt: startedAt,
-            durationMs: 0,
+            startedAt: lastStepTime,
+            endedAt: stepArrivedAt,
+            durationMs,
             status: 'ok',
             attributes: { runId: this.runId, sessionId: this.sessionId, stepType: step.type },
           };
-          this.state.spans.push(span);
-          callbacks?.onSpan?.(span);
-          logger.info({
-            eventType: 'span_end',
-            traceId: this.runId,
-            spanId,
-            name: 'reasoning',
-            message: reasoningMessage,
-            startedAt,
-            endedAt: startedAt,
-            durationMs: 0,
-            status: 'ok',
-            runId: this.runId,
-            sessionId: this.sessionId,
-            span: 'reasoning',
+
+          this.emitClosedSpan(span, callbacks, {
             stepType: step.type,
-            agentName: this.name,
-            model: this.runtimeMetadata.model,
+            span: 'reasoning',
           }, reasoningMessage);
-          trace.push({ kind: 'step', message: reasoningMessage, timestamp: Date.now(), span: 'reasoning' });
+
+          trace.push({ kind: 'step', message: reasoningMessage, timestamp: stepArrivedAt, span: 'reasoning' });
+
         } else if (step.type === 'tool_call') {
           this.state.toolCalls.push({ toolId: step.toolId, parameters: step.parameters });
           const spanId = `tool-${step.toolId}-${Math.random().toString(36).slice(2, 8)}`;
+
           this.activeToolSpans.set(step.toolId, {
             spanId,
-            startedAt: Date.now(),
+            startedAt: stepArrivedAt,
             parameters: step.parameters,
           });
+
           logger.info({
             eventType: 'span_start',
             traceId: this.runId,
             spanId,
+            parentSpanId: this.rootSpanId,
             name: 'tool',
             toolId: step.toolId,
             runId: this.runId,
             sessionId: this.sessionId,
-            span: 'tool',
             agentName: this.name,
             model: this.runtimeMetadata.model,
           }, `tool_call:start:${step.toolId}`);
-          trace.push({ kind: 'step', message: `tool:${step.toolId}`, timestamp: Date.now(), span: 'tool' });
+
+          trace.push({ kind: 'step', message: `tool:${step.toolId}`, timestamp: stepArrivedAt, span: 'tool' });
+
         } else if (step.type === 'tool_result') {
           const lastToolCall = this.state.toolCalls.at(-1);
           if (lastToolCall) {
             lastToolCall.result = step.result;
           }
           this.state.intermediateResults[step.toolId] = step.result;
+
           const pending = this.activeToolSpans.get(step.toolId);
-          const endedAt = Date.now();
-          const startedAt = pending?.startedAt ?? endedAt;
-          const durationMs = endedAt - startedAt;
+          const startedAtSpan = pending?.startedAt ?? stepArrivedAt;
+          const durationMs = stepArrivedAt - startedAtSpan;
           const spanId = pending?.spanId ?? `tool-${step.toolId}`;
+
           const span: AgentRuntimeSpan = {
             traceId: this.runId,
             spanId,
+            parentSpanId: this.rootSpanId,
             name: 'tool',
             message: `tool:${step.toolId}`,
-            startedAt,
-            endedAt,
+            startedAt: startedAtSpan,
+            endedAt: stepArrivedAt,
             durationMs,
             status: 'ok',
             attributes: {
@@ -215,92 +230,166 @@ export class AgentRuntime {
               result: step.result,
             },
           };
-          this.state.spans.push(span);
-          callbacks?.onSpan?.(span);
+
           this.activeToolSpans.delete(step.toolId);
-          logger.info({
-            eventType: 'span_end',
-            traceId: this.runId,
-            spanId,
-            name: 'tool',
-            message: `tool:${step.toolId}`,
-            startedAt,
-            endedAt,
-            durationMs,
-            status: 'ok',
-            runId: this.runId,
-            sessionId: this.sessionId,
+          this.emitClosedSpan(span, callbacks, {
             span: 'tool',
             toolId: step.toolId,
-            agentName: this.name,
-            model: this.runtimeMetadata.model,
           }, `tool_call:end:${step.toolId}`);
-          trace.push({ kind: 'step', message: `tool-result:${step.toolId}`, timestamp: Date.now(), span: 'tool' });
+
+          trace.push({ kind: 'step', message: `tool-result:${step.toolId}`, timestamp: stepArrivedAt, span: 'tool' });
+
         } else if (step.type === 'final') {
           this.state.intermediateResults.final = step.text;
-          const startedAt = Date.now();
-          const spanId = `span-${Math.random().toString(36).slice(2, 8)}`;
+          const spanId = `final-${Math.random().toString(36).slice(2, 8)}`;
+          const durationMs = stepArrivedAt - lastStepTime;
+
           const span: AgentRuntimeSpan = {
             traceId: this.runId,
             spanId,
+            parentSpanId: this.rootSpanId,
             name: 'final',
             message: step.text,
-            startedAt,
-            endedAt: startedAt,
-            durationMs: 0,
+            startedAt: lastStepTime,
+            endedAt: stepArrivedAt,
+            durationMs,
             status: 'ok',
             attributes: { runId: this.runId, sessionId: this.sessionId },
           };
-          this.state.spans.push(span);
-          callbacks?.onSpan?.(span);
-          logger.info({
-            eventType: 'span_end',
-            traceId: this.runId,
-            spanId,
-            name: 'final',
-            message: step.text,
-            startedAt,
-            endedAt: startedAt,
-            durationMs: 0,
-            status: 'ok',
-            runId: this.runId,
-            sessionId: this.sessionId,
+
+          this.emitClosedSpan(span, callbacks, {
             span: 'final',
-            agentName: this.name,
-            model: this.runtimeMetadata.model,
           }, 'final output');
-          trace.push({ kind: 'step', message: step.text, timestamp: Date.now(), span: 'final' });
+
+          trace.push({ kind: 'step', message: step.text, timestamp: stepArrivedAt, span: 'final' });
         }
+
+        lastStepTime = Date.now();
       }
 
       const finalStep = steps.findLast((step) => step.type === 'final') as AgentStep | undefined;
+      const completedAt = Date.now();
       this.state.status = AgentRuntimeStatus.completed;
-      this.runtimeMetadata.latencyMs = Date.now() - startedAt;
-      trace.push({ kind: 'status', message: 'runtime completed', timestamp: Date.now() });
+      this.runtimeMetadata.latencyMs = completedAt - startedAt;
+
+      // Close Root Span
+      this.emitRootSpan('ok', startedAt, completedAt);
+
+      trace.push({ kind: 'status', message: 'runtime completed', timestamp: completedAt });
       return {
         status: AgentRuntimeStatus.completed,
         runId: this.runId,
         startedAt,
-        completedAt: Date.now(),
+        completedAt,
         output: finalStep ? { text: (finalStep as any).text } : {},
         steps,
         trace,
         spans: this.state.spans,
       };
+
     } catch (error) {
+      const failedAt = Date.now();
       this.state.status = AgentRuntimeStatus.failed;
-      this.runtimeMetadata.latencyMs = Date.now() - startedAt;
-      trace.push({ kind: 'status', message: 'runtime failed', timestamp: Date.now() });
+      this.runtimeMetadata.latencyMs = failedAt - startedAt;
+
+      // Flush any active tool spans as failed
+      for (const [toolId, pending] of this.activeToolSpans.entries()) {
+        const span: AgentRuntimeSpan = {
+          traceId: this.runId,
+          spanId: pending.spanId,
+          parentSpanId: this.rootSpanId,
+          name: 'tool',
+          message: `tool:${toolId}`,
+          startedAt: pending.startedAt,
+          endedAt: failedAt,
+          durationMs: failedAt - pending.startedAt,
+          status: 'error',
+          attributes: { toolId, error: String(error) },
+        };
+        this.emitClosedSpan(span, callbacks, { span: 'tool', toolId }, `tool_call:error:${toolId}`);
+      }
+      this.activeToolSpans.clear();
+
+      // Close Root Span with Error
+      this.emitRootSpan('error', startedAt, failedAt, String(error));
+
+      trace.push({ kind: 'status', message: 'runtime failed', timestamp: failedAt });
       return {
         status: AgentRuntimeStatus.failed,
         runId: this.runId,
         startedAt,
-        completedAt: Date.now(),
+        completedAt: failedAt,
         steps,
         error: error instanceof Error ? error.message : String(error),
         trace,
         spans: this.state.spans,
       };
     }
+  }
+
+  private emitClosedSpan(
+    span: AgentRuntimeSpan,
+    callbacks?: AgentRuntimeCallbacks,
+    extraContext: Record<string, unknown> = {},
+    logMessage: string = '',
+  ) {
+    this.state.spans.push(span);
+    callbacks?.onSpan?.(span);
+
+    logger.info({
+      eventType: 'span_end',
+      traceId: span.traceId,
+      spanId: span.spanId,
+      parentSpanId: span.parentSpanId,
+      name: span.name,
+      message: span.message,
+      startedAt: span.startedAt,
+      endedAt: span.endedAt,
+      durationMs: span.durationMs,
+      status: span.status,
+      runId: this.runId,
+      sessionId: this.sessionId,
+      agentName: this.name,
+      model: this.runtimeMetadata.model,
+      ...extraContext,
+    }, logMessage);
+  }
+
+  private emitRootSpan(status: 'ok' | 'error', startedAt: number, endedAt: number, errorMessage?: string) {
+    const rootSpan: AgentRuntimeSpan = {
+      traceId: this.runId,
+      spanId: this.rootSpanId,
+      name: 'root',
+      message: `agent_run:${this.name}`,
+      startedAt,
+      endedAt,
+      durationMs: endedAt - startedAt,
+      status,
+      attributes: {
+        runId: this.runId,
+        sessionId: this.sessionId,
+        agentName: this.name,
+        error: errorMessage,
+      },
+    };
+
+    this.state.spans.unshift(rootSpan);
+
+    logger.info({
+      eventType: 'span_end',
+      traceId: rootSpan.traceId,
+      spanId: rootSpan.spanId,
+      name: rootSpan.name,
+      message: rootSpan.message,
+      startedAt,
+      endedAt,
+      durationMs: rootSpan.durationMs,
+      status,
+      runId: this.runId,
+      sessionId: this.sessionId,
+      agentName: this.name,
+      model: this.runtimeMetadata.model,
+      error: errorMessage,
+    }, `agent_run:end:${this.name}`);
   }
 }
