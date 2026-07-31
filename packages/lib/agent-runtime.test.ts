@@ -1,4 +1,5 @@
 import { test, expect } from 'bun:test';
+import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { AgentRuntime, AgentRuntimeStatus } from './agent-runtime';
 
 async function* sampleAgent() {
@@ -159,4 +160,45 @@ test('captures structured trace metadata and tool span duration', async () => {
   expect(toolSpan?.durationMs).toBeGreaterThanOrEqual(0);
   expect(toolSpan?.status).toBe('ok');
   expect(toolSpan?.attributes?.toolId).toBe('search/issues');
+});
+
+test('emits otel spans for runtime steps', async () => {
+  const exporter = new InMemorySpanExporter();
+  const provider = new BasicTracerProvider();
+  provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
+  const tracer = provider.getTracer('agent-runtime-test');
+
+  const runtime = new AgentRuntime({
+    name: 'otel-runtime',
+    sessionId: 'session-otel',
+    input: 'otel please',
+    telemetry: { tracer },
+  });
+
+  await runtime.run(async function* () {
+    yield {
+      type: 'tool_call',
+      timestamp: Date.now(),
+      toolId: 'search/issues',
+      parameters: { query: 'bug' },
+    } as any;
+
+    yield {
+      type: 'tool_result',
+      timestamp: Date.now() + 5,
+      toolId: 'search/issues',
+      result: { total: 1 },
+    } as any;
+
+    yield {
+      type: 'final',
+      timestamp: Date.now() + 10,
+      text: 'done',
+    } as any;
+  });
+
+  const spans = exporter.getFinishedSpans();
+  expect(spans.some((span) => span.name === 'agent.runtime')).toBe(true);
+  expect(spans.some((span) => span.name === 'agent.tool.call')).toBe(true);
+  expect(spans.some((span) => span.name === 'agent.final')).toBe(true);
 });

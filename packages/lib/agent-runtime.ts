@@ -1,5 +1,7 @@
 import { logger } from '@sup/infra/logger';
 import type { AgentStep } from '@sup/types/types';
+import type { Span, Tracer } from '@opentelemetry/api';
+import type { Span, Tracer } from '@opentelemetry/api';
 
 export enum AgentRuntimeStatus {
   pending = 'pending',
@@ -14,6 +16,9 @@ export interface AgentRuntimeRunOptions {
   input: string;
   metadata?: Record<string, unknown>;
   model?: string;
+  telemetry?: {
+    tracer?: Tracer;
+  };
 }
 
 export interface AgentRuntimeTraceEvent {
@@ -85,6 +90,7 @@ export class AgentRuntime {
   public readonly metadata: Record<string, unknown>;
   public readonly state: AgentRuntimeState;
   public readonly runtimeMetadata: AgentRuntimeMetadata;
+  private readonly tracer?: Tracer;
 
   private activeToolSpans = new Map<string, { spanId: string; startedAt: number; parameters?: unknown }>();
 
@@ -95,6 +101,7 @@ export class AgentRuntime {
     this.sessionId = options.sessionId;
     this.input = options.input;
     this.metadata = options.metadata ?? {};
+    this.tracer = options.telemetry?.tracer;
     this.runtimeMetadata = {
       agentName: options.name,
       sessionId: options.sessionId,
@@ -124,6 +131,19 @@ export class AgentRuntime {
     ];
 
     this.state.status = AgentRuntimeStatus.running;
+
+    const otelRootSpan = this.tracer?.startSpan('agent.runtime', {
+      attributes: {
+        'agent.name': this.name,
+        'agent.session_id': this.sessionId,
+        'agent.run_id': this.runId,
+      },
+    });
+
+    if (otelRootSpan) {
+      otelRootSpan.setAttribute('agent.input', this.input);
+      otelRootSpan.setAttribute('agent.model', this.runtimeMetadata.model ?? 'unknown');
+    }
 
     // Log ROOT Span Start
     logger.info({
@@ -273,7 +293,7 @@ export class AgentRuntime {
       this.runtimeMetadata.latencyMs = completedAt - startedAt;
 
       // Close Root Span
-      this.emitRootSpan('ok', startedAt, completedAt);
+      this.emitRootSpan('ok', startedAt, completedAt, undefined, otelRootSpan);
 
       trace.push({ kind: 'status', message: 'runtime completed', timestamp: completedAt });
       return {
@@ -311,7 +331,7 @@ export class AgentRuntime {
       this.activeToolSpans.clear();
 
       // Close Root Span with Error
-      this.emitRootSpan('error', startedAt, failedAt, String(error));
+      this.emitRootSpan('error', startedAt, failedAt, String(error), otelRootSpan);
 
       trace.push({ kind: 'status', message: 'runtime failed', timestamp: failedAt });
       return {
@@ -336,6 +356,25 @@ export class AgentRuntime {
     this.state.spans.push(span);
     callbacks?.onSpan?.(span);
 
+    const otelSpan = this.tracer?.startSpan(this.getOtelSpanName(span.name), {
+      attributes: {
+        'agent.name': this.name,
+        'agent.run_id': this.runId,
+        'agent.session_id': this.sessionId,
+        'agent.span_id': span.spanId,
+        'agent.parent_span_id': span.parentSpanId ?? '',
+        'agent.span_name': span.name,
+        'agent.tool_id': typeof span.attributes?.toolId === 'string' ? span.attributes.toolId : '',
+      },
+    });
+
+    if (otelSpan) {
+      otelSpan.setAttribute('agent.duration_ms', span.durationMs ?? 0);
+      otelSpan.setAttribute('agent.message', span.message);
+      otelSpan.setStatus({ code: span.status === 'ok' ? 0 : 2, message: span.status });
+      otelSpan.end();
+    }
+
     logger.info({
       eventType: 'span_end',
       traceId: span.traceId,
@@ -355,8 +394,8 @@ export class AgentRuntime {
     }, logMessage);
   }
 
-  private emitRootSpan(status: 'ok' | 'error', startedAt: number, endedAt: number, errorMessage?: string) {
-    const rootSpan: AgentRuntimeSpan = {
+  private emitRootSpan(status: 'ok' | 'error', startedAt: number, endedAt: number, errorMessage?: string, otelRootSpan?: Span) {
+    const runtimeRootSpan: AgentRuntimeSpan = {
       traceId: this.runId,
       spanId: this.rootSpanId,
       name: 'root',
@@ -373,17 +412,20 @@ export class AgentRuntime {
       },
     };
 
-    this.state.spans.unshift(rootSpan);
+    this.state.spans.unshift(runtimeRootSpan);
+
+    otelRootSpan?.setStatus({ code: status === 'ok' ? 0 : 2, message: errorMessage ?? (status === 'ok' ? 'ok' : 'error') });
+    otelRootSpan?.end();
 
     logger.info({
       eventType: 'span_end',
-      traceId: rootSpan.traceId,
-      spanId: rootSpan.spanId,
-      name: rootSpan.name,
-      message: rootSpan.message,
+      traceId: runtimeRootSpan.traceId,
+      spanId: runtimeRootSpan.spanId,
+      name: runtimeRootSpan.name,
+      message: runtimeRootSpan.message,
       startedAt,
       endedAt,
-      durationMs: rootSpan.durationMs,
+      durationMs: runtimeRootSpan.durationMs,
       status,
       runId: this.runId,
       sessionId: this.sessionId,
@@ -391,5 +433,18 @@ export class AgentRuntime {
       model: this.runtimeMetadata.model,
       error: errorMessage,
     }, `agent_run:end:${this.name}`);
+  }
+
+  private getOtelSpanName(name: AgentRuntimeSpan['name']): string {
+    switch (name) {
+      case 'tool':
+        return 'agent.tool.call';
+      case 'final':
+        return 'agent.final';
+      case 'reasoning':
+        return 'agent.reasoning';
+      default:
+        return 'agent.runtime';
+    }
   }
 }
