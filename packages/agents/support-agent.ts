@@ -16,6 +16,7 @@ import { z } from 'zod';
 import type { AgentConfig, AgentSession, AgentEvent, AgentStep } from '@sup/types/types';
 import type { ExpertiseResolverPort, ToolAdapterPort } from '@sup/domain/expertise-types';
 import { rebuildGraph } from '@sup/lib/graph-reducer';
+import { AgentRuntime, AgentRuntimeStatus } from '@sup/lib';
 import { logger } from '@sup/infra/logger';
 import { CONTEXT_ANCHOR } from '@sup/agents/config';
 import { tools as registry, runTool } from "@sup/tools";

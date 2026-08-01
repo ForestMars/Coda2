@@ -1,6 +1,7 @@
 import { render } from "@opentui/solid";
 import { createSignal, createEffect, For } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
+import { AgentRuntime } from "@sup/lib";
 
 type Message = { role: "user" | "agent"; text: string };
 
@@ -16,21 +17,36 @@ function App({ agent, session, resolver, adapters }) {
     setMessages((m) => [...m, { role: "user", text }]);
     setInput("");
 
+    const runtime = new AgentRuntime({
+      name: "tui-agent",
+      sessionId: session.id,
+      input: text,
+    });
+
     const generator = agent(text, session, { resolver, tools: adapters });
 
-    for await (const step of generator) {
-      if (step.type === "text_delta" && step.delta) {
-        setStreaming((s) => s + step.delta);
-      } else if (step.type === "tool_call") {
-        setActiveTool(step.toolId);
-      } else if (step.type === "tool_result") {
-        setActiveTool("");
-      } else if (step.type === "final") {
-        setMessages((m) => [...m, { role: "agent", text: step.text || streaming() }]);
-        setStreaming("");
-        setActiveTool("");
-      }
-    }
+    await runtime.run(() => generator, {
+      onStep: (step) => {
+        if (step.type === "text_delta" && step.delta) {
+          setStreaming((s) => s + step.delta);
+        } else if (step.type === "tool_call") {
+          setActiveTool(step.toolId);
+        } else if (step.type === "tool_result") {
+          setActiveTool("");
+        } else if (step.type === "final") {
+          setMessages((m) => [...m, { role: "agent", text: step.text || streaming() }]);
+          setStreaming("");
+          setActiveTool("");
+        }
+      },
+      onSpan: (span) => {
+        if (span.name === "reasoning") {
+          setActiveTool(`reasoning: ${span.message}`);
+        } else if (span.name === "tool") {
+          setActiveTool(span.message);
+        }
+      },
+    });
   }
 
   return (
