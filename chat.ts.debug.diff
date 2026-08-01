@@ -1,0 +1,72 @@
+--- a/apps/cli/chat.ts
++++ b/apps/cli/chat.ts
+@@ activeAdapters construction
+   const activeAdapters = (
+     await Promise.all(
+       OutputAdapters.map(async (adapter) =>
+         (await fflags.getBooleanValue(adapter.flagName, false))
+           ? adapter.wrapper
+           : null,
+       ),
+     )
+   ).filter(Boolean);
+
++  console.error(
++    '[DEBUG] active adapters:',
++    OutputAdapters.map((a, i) => `${a.flagName}=${activeAdapters.includes(a.wrapper)}`),
++  );
+
+@@ inside the while(true) loop, before generator is built
+       try {
+         const runtime = new AgentRuntime({
+           name: AGENT,
+           sessionId: session.id,
+           input: userInput,
+         });
+
+-        let generator = agent(userInput, session, {
++        console.error('[DEBUG] modelName resolved to:', process.env.SUPPORT_AGENT_MODEL || process.env.DEFAULT_MODEL);
++        console.error('[DEBUG] calling agent() with input:', JSON.stringify(userInput));
++
++        let rawGenerator = agent(userInput, session, {
+           resolver: ProtocolResolver,
+           tools: adapters,
+         });
++        let generator = rawGenerator;
+
+         for (const adapterFn of activeAdapters) {
++          const before = generator;
+           generator = adapterFn(generator);
++          console.error('[DEBUG] wrapped generator with adapter, changed ref?', before !== generator);
+         }
+
+         const renderState = { accumulated: '', firstToken: true };
++        let stepCount = 0;
+         await runtime.run(() => generator, {
+           onStep: (step) => {
++            stepCount++;
++            console.error(`[DEBUG] onStep #${stepCount}:`, step.type, JSON.stringify(step).slice(0, 200));
+             if (process.env.LOG_STEPS === 'true') {
+               console.log(step);
+             }
+             renderStep(step, renderState);
+           },
+           onSpan: (span) => {
+             if (process.env.LOG_STEPS === 'true') {
+               console.log('[span]', span);
+             }
+           },
+         });
++        console.error(`[DEBUG] runtime.run resolved. total steps: ${stepCount}`);
++
++        // Bypass test: drain the RAW generator directly, no adapters, no runtime.
++        // Comment this whole block out once you've got your answer.
++        if (process.env.DEBUG_RAW === 'true') {
++          console.error('[DEBUG:RAW] draining unwrapped generator directly...');
++          let rawCount = 0;
++          for await (const step of agent(userInput, session, { resolver: ProtocolResolver, tools: adapters })) {
++            rawCount++;
++            console.error(`[DEBUG:RAW] step #${rawCount}:`, step.type);
++          }
++          console.error(`[DEBUG:RAW] raw generator produced ${rawCount} steps total.`);
++        }

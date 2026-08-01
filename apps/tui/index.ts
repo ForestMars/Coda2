@@ -1,3 +1,4 @@
+// apps/tui/index.ts
 import { render } from "@opentui/solid";
 import { createSignal, For, onMount } from "solid-js";
 import {
@@ -25,7 +26,7 @@ function App() {
   const [activeTool, setActiveTool] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const [ready, setReady] = createSignal(false);
-  
+
   // Keep a reference to the active agent function
   let currentAgent: any = null;
 
@@ -68,6 +69,7 @@ function App() {
   };
 
   async function submit(text: string) {
+    console.error("[submit] received:", JSON.stringify(text));
     if (!text.trim() || busy() || !ready() || !currentAgent) return;
     setBusy(true);
     setMessages((m) => [...m, { role: "user", text }]);
