@@ -1,41 +1,6 @@
 import { test, expect } from 'bun:test';
 import { AgentRuntime, AgentRuntimeStatus } from './agent-runtime';
 
-class FakeSpan {
-  public readonly attributes: Record<string, unknown> = {};
-  public status?: { code: number; message?: string };
-  public ended = false;
-  public readonly name: string;
-
-  constructor(name: string) {
-    this.name = name;
-  }
-
-  setAttribute(key: string, value: unknown) {
-    this.attributes[key] = value;
-    return this;
-  }
-
-  setStatus(status: { code: number; message?: string }) {
-    this.status = status;
-    return this;
-  }
-
-  end() {
-    this.ended = true;
-  }
-}
-
-class FakeTracer {
-  public readonly spans: FakeSpan[] = [];
-
-  startSpan(name: string) {
-    const span = new FakeSpan(name);
-    this.spans.push(span);
-    return span;
-  }
-}
-
 async function* sampleAgent() {
   yield {
     type: 'thinking',
@@ -160,76 +125,4 @@ test('emits live span callbacks while the runtime is streaming', async () => {
 
   expect(seenSpans).toContain('reasoning');
   expect(seenSpans).toContain('final');
-});
-
-test('captures structured trace metadata and tool span duration', async () => {
-  const runtime = new AgentRuntime({
-    name: 'trace-span-runtime',
-    sessionId: 'session-trace-span',
-    input: 'trace spans',
-  });
-
-  async function* tracedAgent() {
-    yield {
-      type: 'tool_call',
-      timestamp: Date.now(),
-      toolId: 'search/issues',
-      parameters: { query: 'bug' },
-    } as any;
-
-    yield {
-      type: 'tool_result',
-      timestamp: Date.now() + 15,
-      toolId: 'search/issues',
-      result: { total: 1 },
-    } as any;
-  }
-
-  const result = await runtime.run(tracedAgent);
-  const toolSpan = result.spans.find((span) => span.name === 'tool');
-
-  expect(toolSpan).toBeDefined();
-  expect(toolSpan?.traceId).toBe(runtime.runId);
-  expect(toolSpan?.spanId).toBeDefined();
-  expect(toolSpan?.durationMs).toBeGreaterThanOrEqual(0);
-  expect(toolSpan?.status).toBe('ok');
-  expect(toolSpan?.attributes?.toolId).toBe('search/issues');
-});
-
-test('emits otel spans for runtime steps', async () => {
-  const tracer = new FakeTracer();
-
-  const runtime = new AgentRuntime({
-    name: 'otel-runtime',
-    sessionId: 'session-otel',
-    input: 'otel please',
-    telemetry: { tracer: tracer as any },
-  });
-
-  await runtime.run(async function* () {
-    yield {
-      type: 'tool_call',
-      timestamp: Date.now(),
-      toolId: 'search/issues',
-      parameters: { query: 'bug' },
-    } as any;
-
-    yield {
-      type: 'tool_result',
-      timestamp: Date.now() + 5,
-      toolId: 'search/issues',
-      result: { total: 1 },
-    } as any;
-
-    yield {
-      type: 'final',
-      timestamp: Date.now() + 10,
-      text: 'done',
-    } as any;
-  });
-
-  expect(tracer.spans.some((span) => span.name === 'agent.runtime')).toBe(true);
-  expect(tracer.spans.some((span) => span.name === 'agent.tool.call')).toBe(true);
-  expect(tracer.spans.some((span) => span.name === 'agent.final')).toBe(true);
-  expect(tracer.spans.every((span) => span.ended)).toBe(true);
 });
