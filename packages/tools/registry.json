@@ -21,9 +21,7 @@
           "description": "The shell command to run, e.g. npm test or git status"
         }
       },
-      "required": [
-        "command"
-      ]
+      "required": ["command"]
     }
   },
   {
@@ -38,9 +36,7 @@
           "description": "Glob pattern to match, e.g. *.ts or src/**/*.ts"
         }
       },
-      "required": [
-        "pattern"
-      ]
+      "required": ["pattern"]
     }
   },
   {
@@ -55,9 +51,7 @@
           "description": "Relative path from the project root, e.g. src/main.ts"
         }
       },
-      "required": [
-        "path"
-      ]
+      "required": ["path"]
     }
   },
   {
@@ -76,10 +70,7 @@
           "description": "The full content to write to the file"
         }
       },
-      "required": [
-        "path",
-        "content"
-      ]
+      "required": ["path", "content"]
     }
   },
   {
@@ -89,14 +80,9 @@
     "inputSchema": {
       "type": "object",
       "properties": {
-        "issue_number": {
-          "type": "number",
-          "description": "The issue number to close"
-        }
+        "issue_number": { "type": "number" }
       },
-      "required": [
-        "issue_number"
-      ]
+      "required": ["issue_number"]
     }
   },
   {
@@ -106,90 +92,59 @@
     "inputSchema": {
       "type": "object",
       "properties": {
-        "issue_number": {
-          "type": "number",
-          "description": "The issue number to comment on"
-        },
-        "body": {
-          "type": "string",
-          "description": "The comment text"
-        }
+        "issue_number": { "type": "number" },
+        "body": { "type": "string" }
       },
-      "required": [
-        "issue_number",
-        "body"
-      ]
+      "required": ["issue_number", "body"]
     }
   },
   {
     "name": "github.create_issue",
-    "description": "Create a new GitHub issue in the configured repository. REQUIRED: title. OPTIONAL: body (description), labels (tags for the issue).",
+    "description": "Create a new GitHub issue in the configured repository.",
     "importPath": "github/create_issue/index.ts",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "title": {
-          "type": "string",
-          "description": "Brief title for the issue (required). Example: 'Fix login button styling' or 'Add email validation'"
-        },
-        "body": {
-          "type": "string",
-          "description": "Detailed description of the issue (optional). Include context, steps to reproduce, or desired behavior."
-        },
-        "labels": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Tags to categorize the issue (optional). Examples: 'bug', 'feature', 'docs', 'enhancement'"
-        }
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "labels": { "type": "array", "items": { "type": "string" } }
       },
-      "required": [
-        "title"
-      ]
+      "required": ["title"]
     }
   },
   {
     "name": "github.search_issues",
-    "description": "Search for GitHub issues in the repository.",
+    "description": "Search for GitHub issues in the configured repository.",
     "importPath": "github/search_issues/index.ts",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "query": {
-          "type": "string",
-          "description": "Search query"
-        },
-        "state": {
-          "type": "string",
-          "enum": [
-            "open",
-            "closed",
-            "all"
-          ],
-          "description": "Issue state filter"
-        }
+        "query": { "type": "string" },
+        "state": { "type": "string", "enum": ["open", "closed", "all"] }
       },
-      "required": [
-        "query"
-      ]
+      "required": ["query"]
     }
   },
   {
     "name": "smoke",
-    "description": "A sanity check tool to verify tool-calling is working. Triggered when the user asks what day it is.",
+    "description": "A sanity check tool to verify tool-calling is working.",
     "importPath": "smoke/index.ts",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "query": {
-          "type": "string",
-          "description": "The user's question about the date or time"
-        }
+        "query": { "type": "string" }
       },
-      "required": [
-        "query"
-      ]
+      "required": ["query"]
+    }
+  },
+  {
+    "name": "hello_world",
+    "description": "Returns a hello-world response to verify MCP tool discovery and execution.",
+    "importPath": "hello_world/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
     }
   }
 ]

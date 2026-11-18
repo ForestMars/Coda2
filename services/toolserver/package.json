@@ -1,0 +1,9 @@
+{
+  "name": "coda2-toolserver-image",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cfworker/json-schema": "4.1.1",
+    "@modelcontextprotocol/server": "2.0.0-beta.4"
+  }
+}
