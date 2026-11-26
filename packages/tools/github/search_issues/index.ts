@@ -4,9 +4,7 @@
  */
 // import fetch from "node-fetch"; // no cargo culting pls
 
-const token = process.env.GITHUB_TOKEN;
-const owner = process.env.REPO_OWNER;
-const repo = process.env.REPO_NAME;
+import { resolveGitHubConfig } from '../config';
 
 export interface SearchIssuesParams {
   query: string;
@@ -16,10 +14,10 @@ export interface SearchIssuesParams {
 export async function searchIssues(params: SearchIssuesParams) {
   const { query, state = "open" } = params;
 
-  // if (!query) throw new Error("query parameter is required");
-  if (!token) throw new Error("GITHUB_TOKEN environment variable not set");
+  const { token, owner, repo } = await resolveGitHubConfig();
 
-  const q = encodeURIComponent(`is:issue repo:${owner}/${repo}${query ? ` ${query}` : ""} is:${state === "all" ? "" : state}`.trim());
+  const stateFilter = state === "all" ? "" : ` is:${state}`;
+  const q = encodeURIComponent(`is:issue repo:${owner}/${repo}${query ? ` ${query}` : ""}${stateFilter}`.trim());
   // const q = encodeURIComponent(`is:issue repo:${owner}/${repo} ${query}`);
   const res = await fetch(`https://api.github.com/search/issues?q=${q}`, {
     headers: {
