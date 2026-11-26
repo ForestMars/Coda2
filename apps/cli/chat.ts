@@ -100,7 +100,7 @@ export async function startChat() {
         }
 
         const renderState = { accumulated: '', firstToken: true };
-        await runtime.run(() => generator, {
+        const runtimeResult = await runtime.run(() => generator, {
           onStep: (step) => {
             if (process.env.LOG_STEPS === 'true') {
               console.log(step);
@@ -113,6 +113,16 @@ export async function startChat() {
             }
           },
         });
+
+        if (runtimeResult.status === 'failed') {
+          const message = runtimeResult.error ?? 'Agent execution failed.';
+          renderState.accumulated = '';
+          console.error(`\\nAgent error: ${message}\\n`);
+          logger.error(
+            { runId: runtimeResult.runId, error: message },
+            'Agent execution failed',
+          );
+        }
       } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error('Error in agent execution:', message);
