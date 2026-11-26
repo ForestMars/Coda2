@@ -45,8 +45,12 @@ const supportAgentConfig: AgentConfig = {
  * The manifest remains the source of truth; this is only the provider adapter.
  */
 export function buildSupportToolSet(
-  availableTools = filterToolsForAgent(registry, 'support'),
-  executeTool = runTool,
+  availableTools: Array<{
+    name: string;
+    description: string;
+    inputSchema: any;
+  }> = filterToolsForAgent(registry, 'support'),
+  executeTool: (toolName: string, input: any) => Promise<unknown> = runTool,
 ) {
   return Object.fromEntries(
     availableTools.map((tool) => {
