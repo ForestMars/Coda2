@@ -25,15 +25,11 @@ export const AGENT_TOOL_POLICIES: Record<AgentType, AgentToolPolicy> = {
   support: {
     description: 'Support agent: handles customer inquiries, order lookups, issue tracking',
     tools: [
-      // Smoke test
-      'smoke',
-      
-      // GitHub operations
-      'github/get_repo_info',
-      'github/create_issue',
-      'github/search_issues',
-      'github/comment_issue',
-      'github/close_issue',
+      // GitHub operations (names must match packages/tools/registry.json)
+      'github.create_issue',
+      'github.search_issues',
+      'github.comment_issue',
+      'github.closes_issue',
     ],
   },
 
