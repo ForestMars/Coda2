@@ -105,10 +105,13 @@ export async function resolveSupportAgentConfig(): Promise<ResolvedSupportAgentC
  */
 function buildConversationHistory(events: AgentEvent[]): string {
   return events
-    .filter(e => e.type === 'USER_UPDATE' || e.type === 'TOOL_RESULT')
+    .filter(e => e.type === 'USER_UPDATE' || e.type === 'ASSISTANT_UPDATE' || e.type === 'TOOL_RESULT')
     .map(e => {
       if (e.type === 'USER_UPDATE') {
         return `User: ${e.payload.text}`;
+      }
+      if (e.type === 'ASSISTANT_UPDATE') {
+        return `Assistant: ${e.payload.text}`;
       }
       if (e.type === 'TOOL_RESULT') {
         // Fix: Access e.payload.result directly.
@@ -297,9 +300,20 @@ export async function* supportAgent(
         prompt: `${updatedHistory}\n\nSummarize the completed tool execution for the user.`,
       });
 
+      session.events.push({
+        type: 'ASSISTANT_UPDATE',
+        payload: { text: finalResponse.text },
+        timestamp: Date.now(),
+      });
       yield { type: 'final', timestamp: Date.now(), text: finalResponse.text };
     } else {
-      yield { type: 'final', timestamp: Date.now(), text: response.text.trim() };
+      const finalText = response.text.trim();
+      session.events.push({
+        type: 'ASSISTANT_UPDATE',
+        payload: { text: finalText },
+        timestamp: Date.now(),
+      });
+      yield { type: 'final', timestamp: Date.now(), text: finalText };
     }
 
     const latencyMs = Math.round(performance.now() - startTime);
