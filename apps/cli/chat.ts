@@ -46,11 +46,10 @@ await OpenFeature.setProviderAndWait(multiProvider);
 const fflags = OpenFeature.getClient();
 
 // TTY = stream tokens as they arrive. Piped = collect and print at end.
+const DEBUG = process.env.DEBUG === 'true';
 const STREAMING = process.stdout.isTTY ?? false;
 
 export async function startChat() {
-
-
   const activeAdapters = (
     await Promise.all(
       OutputAdapters.map(async (adapter) =>
@@ -61,31 +60,23 @@ export async function startChat() {
     )
   ).filter(Boolean);
 
-  // --- DEBUG ---
-  console.error(
-    '[DEBUG] active adapters:',
-    OutputAdapters.map((a) => `${a.flagName}=${activeAdapters.includes(a.wrapper)}`),
-  );
-  // --- /DEBUG ---
+  if (DEBUG) {
+    console.error(
+      '[DEBUG] active adapters:',
+      OutputAdapters.map((a) => `${a.flagName}=${activeAdapters.includes(a.wrapper)}`),
+    );
+  }
 
   const rl = readline.createInterface({ input, output });
-  // rl.setPrompt('You: ');
-
   const session: AgentSession = {
     id: 'cli-session-' + Date.now(),
     events: [],
   };
 
-  console.log(` Active Agent: \x1b[1m${AGENT.toUpperCase()}\x1b[0m`);
-  console.log(` Active Model: \x1b[32m${typeof modelSpec === 'object' ? JSON.stringify(modelSpec) : modelSpec}\x1b[0m`);
-
-  process.nextTick(() => rl.prompt());
-  // logger.debug(`Agent: ${AGENT}`);
-  //logger.debug(`Model: ${modelSpec}`);
+  console.log(` Active Agent: \\x1b[1m${AGENT.toUpperCase()}\\x1b[0m`);
+  console.log(` Active Model: \\x1b[32m${typeof modelSpec === 'object' ? JSON.stringify(modelSpec) : modelSpec}\\x1b[0m`);
 
   try {
-    // rl.prompt();
-
     while (true) {
       const userInput = await rl.question('You: ');
       if (userInput.trim().toLowerCase() === 'exit') break;
@@ -95,12 +86,13 @@ export async function startChat() {
           name: AGENT,
           sessionId: session.id,
           input: userInput,
+          model: typeof modelSpec === 'string' ? modelSpec : undefined,
         });
 
-        // --- DEBUG ---
-        console.error('[DEBUG] modelName resolved to:', process.env.SUPPORT_AGENT_MODEL || process.env.DEFAULT_MODEL);
-        console.error('[DEBUG] calling agent() with input:', JSON.stringify(userInput));
-        // --- /DEBUG ---
+        if (DEBUG) {
+          console.error('[DEBUG] model resolved to:', modelSpec);
+          console.error('[DEBUG] calling agent() with input:', JSON.stringify(userInput));
+        }
 
         let generator = agent(userInput, session, {
           resolver: ProtocolResolver,
@@ -108,24 +100,21 @@ export async function startChat() {
         });
 
         for (const adapterFn of activeAdapters) {
-          // --- DEBUG ---
-          const before = generator;
+          const beforeAdapter = generator;
           generator = adapterFn(generator);
-          console.error('[DEBUG] wrapped generator with adapter, ref changed?', before !== generator);
-          // --- /DEBUG ---
-          // (original line, kept for when you strip debug: generator = adapterFn(generator);)
+          if (DEBUG) {
+            console.error('[DEBUG] adapter wrapped generator:', beforeAdapter !== generator);
+          }
         }
 
         const renderState = { accumulated: '', firstToken: true };
-        // --- DEBUG ---
         let stepCount = 0;
-        // --- /DEBUG ---
-        await runtime.run(() => generator, {
+        const runtimeResult = await runtime.run(() => generator, {
           onStep: (step) => {
-            // --- DEBUG ---
             stepCount++;
-            console.error(`[DEBUG] onStep #${stepCount}:`, step.type, JSON.stringify(step).slice(0, 200));
-            // --- /DEBUG ---
+            if (DEBUG) {
+              console.error(`[DEBUG] onStep #${stepCount}:`, step.type, JSON.stringify(step).slice(0, 300));
+            }
             if (process.env.LOG_STEPS === 'true') {
               console.log(step);
             }
@@ -138,32 +127,29 @@ export async function startChat() {
           },
         });
 
-        // --- DEBUG ---
-        console.error(`[DEBUG] runtime.run resolved. total steps: ${stepCount}`);
-
-        // Bypass test: drains the RAW generator directly, no adapters, no runtime,
-        // no shared session (separate session so it doesn't double-write events).
-        // Gate behind an env var so it's a no-op unless you ask for it.
-        // Remove this whole block once you've got your answer.
-        if (process.env.DEBUG_RAW === 'true') {
-          console.error('[DEBUG:RAW] draining unwrapped generator directly...');
-          let rawCount = 0;
-          const rawSession: AgentSession = { id: session.id + '-rawdebug', events: [...session.events] };
-          for await (const step of agent(userInput, rawSession, { resolver: ProtocolResolver, tools: adapters })) {
-            rawCount++;
-            console.error(`[DEBUG:RAW] step #${rawCount}:`, step.type);
-          }
-          console.error(`[DEBUG:RAW] raw generator produced ${rawCount} steps total.`);
+        if (DEBUG) {
+          console.error('[DEBUG] runtime result:', {
+            status: runtimeResult.status,
+            error: runtimeResult.error,
+            totalSteps: stepCount,
+          });
         }
-        // --- /DEBUG ---
-      } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error('Error in agent execution:', message);
-    console.error('Full error:', error);
-    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
-  }
 
-  rl.prompt();
+        if (runtimeResult.status === 'failed') {
+          throw new Error(runtimeResult.error || 'Agent runtime failed without an error message.');
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('Error in agent execution:', message);
+        if (DEBUG) {
+          console.error('Full error:', error);
+          console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+        } else {
+          console.error(`Agent error: ${message}`);
+        }
+      }
+
+      rl.prompt();
     }
   } finally {
     rl.close();
