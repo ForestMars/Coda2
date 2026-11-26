@@ -255,23 +255,22 @@ export async function* supportAgent(
 
     // PATH A: Native Tool Results
     if (response.toolResults && response.toolResults.length > 0) {
-      toolResults = await Promise.all(response.toolResults.map(async (tr) => {
-        let finalResult = tr.output;
+      toolResults = response.toolResults.map((tr) => {
         logger.debug({ toolName: tr.toolName, input: tr.input, output: tr.output }, 'tool result debug');
-        if (finalResult === undefined) {
-          logger.warn({ tool: tr.toolName }, '[FIX] SDK returned undefined result. Forcing manual execution...');
-          const toolCall = response.toolCalls?.find(tc => tc.toolName === tr.toolName);
-          finalResult = await runTool(tr.toolName, toolCall?.args ?? tr.args);
+        if (tr.output === undefined) {
+          throw new InfrastructureError(
+            `[support-agent] Tool '${tr.toolName}' completed without returning an output.`,
+          );
         }
 
-        logger.info(`[TRACE] Final Tool Output: ${tr.toolName} -> ${JSON.stringify(finalResult)}`);
+        logger.info(`[TRACE] Final Tool Output: ${tr.toolName} -> ${JSON.stringify(tr.output)}`);
 
         return {
           toolName: tr.toolName,
-          result: finalResult,
-          args: tr.args
+          result: tr.output,
+          args: tr.input,
         };
-      }));
+      });
     }
     /** EXECUTION & BROADCAST: Finalize actions and record to the Data Plane. */
     if (toolResults.length > 0) {
