@@ -19,13 +19,20 @@ import { adapters } from '@sup/tools';
 import { JsonFileProvider } from '@sup/infra/adapters/JsonFileProvider';
 
 const AGENT = process.env.AGENT_TYPE || 'coding';
-const { agent, modelSpec } = await (async () => {
+const { agent, modelSpec, agentOptions } = await (async () => {
   if (AGENT === 'coding') {
     const { codingAgent, codingAgentModelSpec } = await import('@sup/agents/coding-agent');
-    return { agent: codingAgent, modelSpec: codingAgentModelSpec };
+    return { agent: codingAgent, modelSpec: codingAgentModelSpec, agentOptions: {} };
   }
-  const { supportAgent, supportAgentModelSpec } = await import('@sup/agents/support-agent');
-  return { agent: supportAgent, modelSpec: supportAgentModelSpec };
+
+  const { supportAgent, supportAgentModelSpec, resolveSupportAgentConfig } =
+    await import('@sup/agents/support-agent');
+  const resolvedConfig = await resolveSupportAgentConfig();
+  return {
+    agent: supportAgent,
+    modelSpec: supportAgentModelSpec,
+    agentOptions: { resolvedConfig },
+  };
 })();
 
 const { OutputAdapters } = await import('@sup/agents/adapters/output-adapters');
@@ -105,6 +112,7 @@ export async function startChat() {
         let generator = agent(userInput, session, {
           resolver: ProtocolResolver,
           tools: adapters,
+          ...agentOptions,
         });
 
         for (const adapterFn of activeAdapters) {
