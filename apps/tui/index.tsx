@@ -26,6 +26,7 @@ const AGENT = process.env.AGENT || "support";
 
 // dev-only
 function debugLog(...args: unknown[]) {
+  if (process.env.DEBUG !== "true") return;
   appendFileSync("/tmp/tui-debug.log", args.map(String).join(" ") + "\n");
 }
 
@@ -117,7 +118,7 @@ function App() {
       });
 
       debugLog("[submit] starting runtime.run()");
-      await runtime.run(() => generator, {
+      const runtimeResult = await runtime.run(() => generator, {
         onStep: (step) => {
           debugLog("[runtime] onStep type:", step?.type);
           if (step.type === "text_delta" && step.delta) {
@@ -144,6 +145,9 @@ function App() {
           }
         },
       });
+      if (runtimeResult.status === "failed") {
+        throw new Error(runtimeResult.error || "Agent runtime failed without an error message.");
+      }
       debugLog("[submit] runtime.run() completed successfully");
     } catch (err) {
       debugLog("[submit error]:", err);
