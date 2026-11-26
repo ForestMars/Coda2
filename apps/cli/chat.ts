@@ -117,7 +117,7 @@ export async function startChat() {
         if (runtimeResult.status === 'failed') {
           const message = runtimeResult.error ?? 'Agent execution failed.';
           renderState.accumulated = '';
-          console.error(`\\nAgent error: ${message}\\n`);
+          console.error(`\nAgent error: ${message}\n`);
           logger.error(
             { runId: runtimeResult.runId, error: message },
             'Agent execution failed',
