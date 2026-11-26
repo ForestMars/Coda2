@@ -1,6 +1,6 @@
 {
   "style": "funny",
   "efficient-style": {
-    "enabled": true
+    "enabled": false
   }
 }

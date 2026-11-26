@@ -10,15 +10,11 @@ import {
 
 import { ProtocolResolver } from "@sup/lib/protocol-resolver";
 import { AgentRuntime } from "@sup/lib";
+import type { AgentSession } from "@sup/types/types";
 import { adapters } from "@sup/tools";
 import { JsonFileProvider } from "@sup/infra/adapters/JsonFileProvider";
 
 import { appendFileSync } from "node:fs";
-
-type AgentSession = {
-  id: string;
-  events: any[];
-};
 
 type Message = { role: "user" | "agent"; text: string };
 
@@ -26,6 +22,7 @@ const AGENT = process.env.AGENT || "support";
 
 // dev-only
 function debugLog(...args: unknown[]) {
+  if (process.env.DEBUG !== "true") return;
   appendFileSync("/tmp/tui-debug.log", args.map(String).join(" ") + "\n");
 }
 
@@ -66,9 +63,12 @@ function App() {
         setCurrentModel(mod.codingAgentModelSpec);
       } else {
         const mod = await import("@sup/agents/support-agent");
+        const resolvedConfig = await mod.resolveSupportAgentConfig();
         debugLog("[onMount] loaded support-agent:", typeof mod.supportAgent);
-        setCurrentAgent(() => mod.supportAgent);
-        setCurrentModel(mod.supportAgentModelSpec?.name);
+        setCurrentAgent(() => (input: string, session: AgentSession, options: any) =>
+          mod.supportAgent(input, session, { ...options, resolvedConfig }),
+        );
+        setCurrentModel(mod.supportAgentModelSpec);
       }
 
       setReady(true);
@@ -81,9 +81,16 @@ function App() {
     }
   });
 
+  const sessionId = "tui-session-" + Date.now();
   const session: AgentSession = {
-    id: "tui-session-" + Date.now(),
+    id: sessionId,
+    sessionId,
+    userId: process.env.USER || "local-user",
     events: [],
+    worldModel: {
+      unresolvedEntities: {},
+      lookupFailures: [],
+    },
   };
 
   async function submit(text: string) {
@@ -114,7 +121,7 @@ function App() {
       });
 
       debugLog("[submit] starting runtime.run()");
-      await runtime.run(() => generator, {
+      const runtimeResult = await runtime.run(() => generator, {
         onStep: (step) => {
           debugLog("[runtime] onStep type:", step?.type);
           if (step.type === "text_delta" && step.delta) {
@@ -141,6 +148,9 @@ function App() {
           }
         },
       });
+      if (runtimeResult.status === "failed") {
+        throw new Error(runtimeResult.error || "Agent runtime failed without an error message.");
+      }
       debugLog("[submit] runtime.run() completed successfully");
     } catch (err) {
       debugLog("[submit error]:", err);

@@ -5,17 +5,16 @@
 
 // @ts-nocheck
 
-import { generateText } from 'ai';
-import { ollama } from 'ai-sdk-ollama';
+import { generateText, jsonSchema } from 'ai';
+import { createOllama } from 'ai-sdk-ollama';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { z } from 'zod';
 
 import type { AgentConfig, AgentSession, AgentEvent, AgentStep } from '@sup/types/types';
 import type { ExpertiseResolverPort, ToolAdapterPort } from '@sup/domain/expertise-types';
 import { rebuildGraph } from '@sup/lib/graph-reducer';
-import { AgentRuntime, AgentRuntimeStatus, InfrastructureError, ModuleNotFoundError } from '@sup/lib';
+import { InfrastructureError, ModuleNotFoundError } from '@sup/lib';
 import { logger } from '@sup/infra/logger';
 import { CONTEXT_ANCHOR } from '@sup/agents/config';
 import { tools as registry, runTool } from "@sup/tools";
@@ -43,7 +42,7 @@ export interface ResolvedSupportAgentConfig {
  * @function resolveSupportAgentConfig
  * @returns {Promise<ResolvedSupportAgentConfig>} The validated support agent configuration object.
  * @throws {InfrastructureError} If env vars are missing or LLM provider is unreachable.
- * @throws {ModelNotFoundError} If specified model is not installed on target LLM host.
+ * @throws {ModuleNotFoundError} If specified model is not installed on target LLM host.
  */
 export async function resolveSupportAgentConfig(): Promise<ResolvedSupportAgentConfig> {
   const modelName = process.env.SUPPORT_AGENT_MODEL || process.env.DEFAULT_MODEL;
@@ -72,14 +71,14 @@ export async function resolveSupportAgentConfig(): Promise<ResolvedSupportAgentC
     );
 
     if (!isAvailable) {
-      throw new ModelNotFoundError(
+      throw new ModuleNotFoundError(
         `[support-agent] Model '${modelName}' is missing on ${endpoint}.\n` +
         `Installed models: [${installed.join(', ') || 'none'}]\n` +
         `Action: Run 'ollama pull ${modelName}' or update SUPPORT_AGENT_MODEL.`
       );
     }
   } catch (err) {
-    if (err instanceof InfrastructureError || err instanceof ModelNotFoundError) {
+    if (err instanceof InfrastructureError || err instanceof ModuleNotFoundError) {
       throw err;
     }
     throw new InfrastructureError(
@@ -95,11 +94,6 @@ export async function resolveSupportAgentConfig(): Promise<ResolvedSupportAgentC
   };
 }
 
-const toolCallSchema = z.object({
-  tool: z.string(),
-  entityId: z.string().or(z.number()).transform(v => String(v))
-});
-
 /**
  * (PROJECTION) Reconstruct a human-readable conversation history from the event log.
  * This is what gives the LLM a coherent "memory" of the conversation —
@@ -111,10 +105,13 @@ const toolCallSchema = z.object({
  */
 function buildConversationHistory(events: AgentEvent[]): string {
   return events
-    .filter(e => e.type === 'USER_UPDATE' || e.type === 'TOOL_RESULT')
+    .filter(e => e.type === 'USER_UPDATE' || e.type === 'ASSISTANT_UPDATE' || e.type === 'TOOL_RESULT')
     .map(e => {
       if (e.type === 'USER_UPDATE') {
         return `User: ${e.payload.text}`;
+      }
+      if (e.type === 'ASSISTANT_UPDATE') {
+        return `Assistant: ${e.payload.text}`;
       }
       if (e.type === 'TOOL_RESULT') {
         // Fix: Access e.payload.result directly.
@@ -161,7 +158,9 @@ export async function* supportAgent(
     throw new InfrastructureError('[support-agent] Execution failed: Unresolved model configuration.');
   }
 
-  const model = opts?.client || ollama(modelName);
+  const endpoint = opts?.resolvedConfig?.endpoint || process.env.LLM_PROVIDER_ENDPOINT || 'http://localhost:11434';
+  const ollamaProvider = createOllama({ baseURL: endpoint });
+  const model = opts?.client || ollamaProvider(modelName);
 
   /** BROADCAST: Initialize and record the User Update to the Data Plane.
    * NOTE: We push to the event log BEFORE calling rebuildGraph so that
@@ -219,9 +218,9 @@ export async function* supportAgent(
   // Without this, the model has no conversational grounding — structured
   // graph state alone is not sufficient for pronoun/entity resolution.
   const conversationHistory = buildConversationHistory(session.events);
-  const fullPrompt = conversationHistory
-    ? `${conversationHistory}\nUser: ${userInput}`
-    : userInput;
+  // The current user event is already in session.events and therefore in this projection.
+  // Appending userInput again duplicates every current turn.
+  const fullPrompt = conversationHistory || userInput;
 
   /**
    * Executes generative request and logs precise inference metrics.
@@ -241,7 +240,7 @@ export async function* supportAgent(
           t.name,
           {
             description: t.description,
-            parameters: t.parameters,
+            inputSchema: jsonSchema(t.inputSchema),
             execute: async (args) => await runTool(t.name, args),
           },
         ])
@@ -256,42 +255,23 @@ export async function* supportAgent(
 
     // PATH A: Native Tool Results
     if (response.toolResults && response.toolResults.length > 0) {
-      toolResults = await Promise.all(response.toolResults.map(async (tr) => {
-        let finalResult = tr.output;
+      toolResults = response.toolResults.map((tr) => {
         logger.debug({ toolName: tr.toolName, input: tr.input, output: tr.output }, 'tool result debug');
-        if (finalResult === undefined) {
-          logger.warn({ tool: tr.toolName }, '[FIX] SDK returned undefined result. Forcing manual execution...');
-          const toolCall = response.toolCalls?.find(tc => tc.toolName === tr.toolName);
-          finalResult = await runTool(tr.toolName, toolCall?.args ?? tr.args);
+        if (tr.output === undefined) {
+          throw new InfrastructureError(
+            `[support-agent] Tool '${tr.toolName}' completed without returning an output.`,
+          );
         }
 
-        logger.info(`[TRACE] Final Tool Output: ${tr.toolName} -> ${JSON.stringify(finalResult)}`);
+        logger.info(`[TRACE] Final Tool Output: ${tr.toolName} -> ${JSON.stringify(tr.output)}`);
 
         return {
           toolName: tr.toolName,
-          result: finalResult,
-          args: tr.args
+          result: tr.output,
+          args: tr.input,
         };
-      }));
+      });
     }
-    // PATH B: Regex Fallback (Support for local/small models that dump JSON in text)
-    else {
-      const jsonMatch = response.text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const toolName = parsed.tool || parsed.toolName;
-          if (toolName && registry.find(t => t.name === toolName)) {
-            const args = parsed.parameters || parsed.args || parsed;
-            const result = await runTool(toolName, args);
-            toolResults.push({ toolName, result, args });
-          }
-        } catch (e) {
-          logger.debug('Regex fallback parsing failed.');
-        }
-      }
-    }
-
     /** EXECUTION & BROADCAST: Finalize actions and record to the Data Plane. */
     if (toolResults.length > 0) {
       for (const tr of toolResults) {
@@ -309,14 +289,30 @@ export async function* supportAgent(
       const updatedHistory = buildConversationHistory(session.events);
       const finalResponse = await generateText({
         model,
-        system: systemPrompt,
+        system: [
+          'You are composing the final user-facing response after tool execution.',
+          'Use only the conversation and actual tool results supplied in the prompt.',
+          'Do not invent facts or claim an action succeeded unless its result confirms success.',
+          'Do not emit tool-call JSON or request another tool call. Respond in concise, natural language.',
+        ].join('\n'),
         temperature: opts?.resolvedConfig?.temperature ?? TEMPERATURE,
-        prompt: `${updatedHistory}\n\nBased on the tool results above, summarize the current status for the user.`,
+        prompt: `${updatedHistory}\n\nSummarize the completed tool execution for the user.`,
       });
 
+      session.events.push({
+        type: 'ASSISTANT_UPDATE',
+        payload: { text: finalResponse.text },
+        timestamp: Date.now(),
+      });
       yield { type: 'final', timestamp: Date.now(), text: finalResponse.text };
     } else {
-      yield { type: 'final', timestamp: Date.now(), text: response.text.trim() };
+      const finalText = response.text.trim();
+      session.events.push({
+        type: 'ASSISTANT_UPDATE',
+        payload: { text: finalText },
+        timestamp: Date.now(),
+      });
+      yield { type: 'final', timestamp: Date.now(), text: finalText };
     }
 
     const latencyMs = Math.round(performance.now() - startTime);
@@ -332,3 +328,7 @@ export async function* supportAgent(
     );
   }
 }
+
+
+export const supportAgentModelSpec =
+  process.env.SUPPORT_AGENT_MODEL || process.env.DEFAULT_MODEL || 'qwen2.5:7b';
