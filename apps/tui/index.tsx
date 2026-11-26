@@ -10,15 +10,11 @@ import {
 
 import { ProtocolResolver } from "@sup/lib/protocol-resolver";
 import { AgentRuntime } from "@sup/lib";
+import type { AgentSession } from "@sup/types/types";
 import { adapters } from "@sup/tools";
 import { JsonFileProvider } from "@sup/infra/adapters/JsonFileProvider";
 
 import { appendFileSync } from "node:fs";
-
-type AgentSession = {
-  id: string;
-  events: any[];
-};
 
 type Message = { role: "user" | "agent"; text: string };
 
@@ -85,9 +81,16 @@ function App() {
     }
   });
 
+  const sessionId = "tui-session-" + Date.now();
   const session: AgentSession = {
-    id: "tui-session-" + Date.now(),
+    id: sessionId,
+    sessionId,
+    userId: process.env.USER || "local-user",
     events: [],
+    worldModel: {
+      unresolvedEntities: {},
+      lookupFailures: [],
+    },
   };
 
   async function submit(text: string) {
