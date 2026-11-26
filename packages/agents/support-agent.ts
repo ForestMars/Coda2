@@ -5,7 +5,7 @@
 
 // @ts-nocheck
 
-import { generateText } from 'ai';
+import { generateText, jsonSchema } from 'ai';
 import { ollama } from 'ai-sdk-ollama';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
@@ -155,17 +155,18 @@ export async function* supportAgent(
  */
   const prompt = systemPrompt + '\n\n' + fullPrompt;
   const startTime = performance.now();
+  const allowedTools = filterToolsForAgent(registry, 'support');
 
   const response = await generateText({
     model,
     system: systemPrompt,
     temperature: supportAgentConfig.temperature,
     tools: Object.fromEntries(
-      filterToolsForAgent(registry, 'support').map((t) => [
+      allowedTools.map((t) => [
         t.name,
         {
           description: t.description,
-          parameters: t.parameters,
+          inputSchema: jsonSchema(t.inputSchema as any),
           execute: async (args) => await runTool(t.name, args),
         },
       ])
@@ -180,28 +181,20 @@ export async function* supportAgent(
 
   // PATH A: Native Tool Results
   if (response.toolResults && response.toolResults.length > 0) {
-    // We need to use Promise.all because we're actually GOING to run the tools now
-    toolResults = await Promise.all(response.toolResults.map(async (tr) => {
-      
-      // If the SDK already ran it, tr.result will exist. 
-      // If it's empty, we force the execution through our loader.
-      let finalResult = tr.output;
+    toolResults = response.toolResults.map((tr) => {
+      const toolCall = response.toolCalls?.find((tc) => tc.toolName === tr.toolName);
+      const args = tr.input ?? toolCall?.input ?? {};
+      const finalResult = tr.output;
 
-      logger.debug({ toolName: tr.toolName, input: tr.input, output: tr.output }, 'tool result debug');
-      if (finalResult === undefined) {
-        logger.warn({ tool: tr.toolName }, '[FIX] SDK returned undefined result. Forcing manual execution...');
-        const toolCall = response.toolCalls?.find(tc => tc.toolName === tr.toolName);
-        finalResult = await runTool(tr.toolName, toolCall?.args ?? tr.args);
-      }
-
+      logger.debug({ toolName: tr.toolName, input: args, output: finalResult }, 'tool result');
       logger.info(`[TRACE] Final Tool Output: ${tr.toolName} -> ${JSON.stringify(finalResult)}`);
 
       return {
         toolName: tr.toolName,
         result: finalResult,
-        args: tr.args
+        args
       };
-    }));
+    });
   }
   // PATH B: Regex Fallback (Support for local/small models that dump JSON in text)
   else {
@@ -210,7 +203,7 @@ export async function* supportAgent(
       try {
         const parsed = JSON.parse(jsonMatch[0]);
         const toolName = parsed.tool || parsed.toolName;
-        if (toolName && registry.find(t => t.name === toolName)) {
+        if (toolName && allowedTools.some((t) => t.name === toolName)) {
           const args = parsed.parameters || parsed.args || parsed;
           const result = await runTool(toolName, args);
           toolResults.push({ toolName, result, args });
