@@ -113,7 +113,12 @@ export interface AgentConfig {
 export type AgentEvent =
   | {
       type: 'USER_UPDATE';
-      payload: {text: string};
+      payload: { text: string };
+      timestamp: number;
+    }
+  | {
+      type: 'ASSISTANT_UPDATE';
+      payload: { text: string };
       timestamp: number;
     }
   | {
@@ -128,7 +133,7 @@ export type AgentEvent =
     }
   | {
       type: 'TOOL_RESULT';
-      payload: { toolId: string; entityId: string; result: any };
+      payload: { toolId: string; entityId?: string; result: any; args?: any };
       timestamp: number;
     };
 
