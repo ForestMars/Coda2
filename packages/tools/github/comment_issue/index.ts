@@ -4,9 +4,7 @@
  */
 // import fetch from "node-fetch"; // no cargo culting pls
 
-const token = process.env.GITHUB_TOKEN;
-const owner = process.env.REPO_OWNER;
-const repo = process.env.REPO_NAME;
+import { resolveGitHubConfig } from '../config';
 
 export interface CommentIssueParams {
   issue_number: number;
@@ -18,7 +16,7 @@ export async function commentIssue(params: CommentIssueParams) {
 
   if (!issue_number) throw new Error("issue_number parameter is required");
   if (!body) throw new Error("body parameter is required");
-  if (!token) throw new Error("GITHUB_TOKEN environment variable not set");
+  const { token, owner, repo } = await resolveGitHubConfig();
 
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${issue_number}/comments`, {
     method: "POST",

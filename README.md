@@ -152,6 +152,18 @@ From the repository root:
 bun install
 ```
 
+### Running the Support Agent
+
+Create a local `.auth` file containing your `GITHUB_TOKEN`. The tracked `.env` supplies the default target repository through `GH_REPO` (currently `coffee`). The support scripts load `.env` first and `.auth` second, so credentials can override defaults without discarding the repository setting.
+
+Run the support CLI with:
+
+```sh
+bun run sup
+```
+
+This script sets `AGENT_TYPE=support` and explicitly loads both `.env` and `.auth`. The generic `bun run cli` script does not load the credential file.
+
 ### Running Backend Services
 
 Most backend services and shared packages run through standard workspace tooling:

@@ -17,7 +17,7 @@ test('runTool can load nested github tools from registry importPath', async () =
   };
 
   try {
-    const result = await runTool('github/search_issues', { query: 'bug', state: 'open' });
+    const result = await runTool('github.search_issues', { query: 'bug', state: 'open' });
     expect(result).toEqual({ total: 0, issues: [] });
   } finally {
     globalThis.fetch = originalFetch;

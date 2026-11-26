@@ -5,12 +5,11 @@
 
 // @ts-nocheck
 
-import { generateText } from 'ai';
+import { generateText, jsonSchema } from 'ai';
 import { ollama } from 'ai-sdk-ollama';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { z } from 'zod';
 
 //import type { AgentStep, AgentConfig, AgentSession, AgentEvent } from '@types/agent-types';
 import type { AgentConfig, AgentSession, AgentEvent, AgentStep } from '@sup/types/types';
@@ -41,10 +40,35 @@ const supportAgentConfig: AgentConfig = {
   tools: []
 };
 
-const toolCallSchema = z.object({
-  tool: z.string(),
-  entityId: z.string().or(z.number()).transform(v => String(v))
-});
+/**
+ * Convert the canonical MCP JSON Schemas into AI SDK 6 tool definitions.
+ * The manifest remains the source of truth; this is only the provider adapter.
+ */
+export function buildSupportToolSet(
+  availableTools: Array<{
+    name: string;
+    description: string;
+    inputSchema: any;
+  }> = filterToolsForAgent(registry, 'support'),
+  executeTool: (toolName: string, input: any) => Promise<unknown> = runTool,
+) {
+  return Object.fromEntries(
+    availableTools.map((tool) => {
+      if (!tool.inputSchema) {
+        throw new Error(`Tool "${tool.name}" is missing its inputSchema.`);
+      }
+
+      return [
+        tool.name,
+        {
+          description: tool.description,
+          inputSchema: jsonSchema(tool.inputSchema),
+          execute: async (input) => executeTool(tool.name, input),
+        },
+      ];
+    }),
+  );
+}
 
 /**
  * (PROJECTION) Reconstruct a human-readable conversation history from the event log.
@@ -153,72 +177,31 @@ export async function* supportAgent(
  * * @note Token counts are calculated using a characters-to-tokens heuristic (1 token ≈ 4 chars).
  * @see {@link logger} for 'inference_complete' event structure.
  */
-  const prompt = systemPrompt + '\n\n' + fullPrompt;
   const startTime = performance.now();
 
   const response = await generateText({
     model,
     system: systemPrompt,
     temperature: supportAgentConfig.temperature,
-    tools: Object.fromEntries(
-      filterToolsForAgent(registry, 'support').map((t) => [
-        t.name,
-        {
-          description: t.description,
-          parameters: t.parameters,
-          execute: async (args) => await runTool(t.name, args),
-        },
-      ])
-    ),
+    tools: buildSupportToolSet(),
     prompt: fullPrompt,
   });
 
   logger.debug({ toolCalls: JSON.stringify(response.toolCalls), toolResults: JSON.stringify(response.toolResults) }, 'raw SDK response');
 
-  // Unified Tool Result Collection
-  let toolResults: { toolName: string; result: any; args: any }[] = [];
+  // AI SDK executes tools through their native execute handlers.
+  // Do not parse tool-call-shaped assistant prose or re-run an executed side effect.
+  const toolResults = (response.toolResults ?? []).map((toolResult) => ({
+    toolName: toolResult.toolName,
+    result: toolResult.output,
+    args: toolResult.input,
+  }));
 
-  // PATH A: Native Tool Results
-  if (response.toolResults && response.toolResults.length > 0) {
-    // We need to use Promise.all because we're actually GOING to run the tools now
-    toolResults = await Promise.all(response.toolResults.map(async (tr) => {
-      
-      // If the SDK already ran it, tr.result will exist. 
-      // If it's empty, we force the execution through our loader.
-      let finalResult = tr.output;
-
-      logger.debug({ toolName: tr.toolName, input: tr.input, output: tr.output }, 'tool result debug');
-      if (finalResult === undefined) {
-        logger.warn({ tool: tr.toolName }, '[FIX] SDK returned undefined result. Forcing manual execution...');
-        const toolCall = response.toolCalls?.find(tc => tc.toolName === tr.toolName);
-        finalResult = await runTool(tr.toolName, toolCall?.args ?? tr.args);
-      }
-
-      logger.info(`[TRACE] Final Tool Output: ${tr.toolName} -> ${JSON.stringify(finalResult)}`);
-
-      return {
-        toolName: tr.toolName,
-        result: finalResult,
-        args: tr.args
-      };
-    }));
-  }
-  // PATH B: Regex Fallback (Support for local/small models that dump JSON in text)
-  else {
-    const jsonMatch = response.text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const toolName = parsed.tool || parsed.toolName;
-        if (toolName && registry.find(t => t.name === toolName)) {
-          const args = parsed.parameters || parsed.args || parsed;
-          const result = await runTool(toolName, args);
-          toolResults.push({ toolName, result, args });
-        }
-      } catch (e) {
-        logger.debug('Regex fallback parsing failed.');
-      }
-    }
+  if ((response.toolCalls?.length ?? 0) > 0 && toolResults.length === 0) {
+    logger.error(
+      { toolCalls: response.toolCalls },
+      'Model returned tool calls without corresponding executed tool results',
+    );
   }
 
   /** EXECUTION & BROADCAST: Finalize actions and record to the Data Plane. */
