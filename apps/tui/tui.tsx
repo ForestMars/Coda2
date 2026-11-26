@@ -2,7 +2,6 @@
  * @file apps/tui/tui.tsx
  * @description TUI panel for Coda/Support Agent
  */
-asdfghjkl; // BREAK THE BUILD
 import { render, useKeyboard } from "@opentui/solid";
 import { createSignal, For } from "solid-js";
 import { AgentRuntime } from "@sup/lib";
