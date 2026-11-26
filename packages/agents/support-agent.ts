@@ -6,7 +6,7 @@
 // @ts-nocheck
 
 import { generateText, jsonSchema } from 'ai';
-import { ollama } from 'ai-sdk-ollama';
+import { createOllama } from 'ai-sdk-ollama';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -155,7 +155,9 @@ export async function* supportAgent(
     throw new InfrastructureError('[support-agent] Execution failed: Unresolved model configuration.');
   }
 
-  const model = opts?.client || ollama(modelName);
+  const endpoint = opts?.resolvedConfig?.endpoint || process.env.LLM_PROVIDER_ENDPOINT || 'http://localhost:11434';
+  const ollamaProvider = createOllama({ baseURL: endpoint });
+  const model = opts?.client || ollamaProvider(modelName);
 
   /** BROADCAST: Initialize and record the User Update to the Data Plane.
    * NOTE: We push to the event log BEFORE calling rebuildGraph so that
