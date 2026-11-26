@@ -68,7 +68,7 @@ function App() {
         const mod = await import("@sup/agents/support-agent");
         debugLog("[onMount] loaded support-agent:", typeof mod.supportAgent);
         setCurrentAgent(() => mod.supportAgent);
-        setCurrentModel(mod.supportAgentModelSpec?.name);
+        setCurrentModel(mod.supportAgentModelSpec);
       }
 
       setReady(true);
