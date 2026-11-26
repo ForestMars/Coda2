@@ -1,4 +1,3 @@
-// apps/tui/index.tsx
 process.stdout.write = process.stderr.write.bind(process.stderr);
 import { render } from "@opentui/solid";
 import { createSignal, For, onMount } from "solid-js";
@@ -13,8 +12,6 @@ import { AgentRuntime } from "@sup/lib";
 import { adapters } from "@sup/tools";
 import { JsonFileProvider } from "@sup/infra/adapters/JsonFileProvider";
 
-import { appendFileSync } from "node:fs";
-
 type AgentSession = {
   id: string;
   events: any[];
@@ -24,13 +21,7 @@ type Message = { role: "user" | "agent"; text: string };
 
 const AGENT = process.env.AGENT || "support";
 
-// dev-only
-function debugLog(...args: unknown[]) {
-  appendFileSync("/tmp/tui-debug.log", args.map(String).join(" ") + "\n");
-}
-
 function App() {
-
   const [messages, setMessages] = createSignal<Message[]>([]);
   const [streaming, setStreaming] = createSignal("");
   const [activeTool, setActiveTool] = createSignal("");
@@ -38,10 +29,9 @@ function App() {
   const [ready, setReady] = createSignal(false);
   const [currentModel, setCurrentModel] = createSignal("Detecting...");
 
-  // Wrap function in a getter function so Solid's signal store doesn't execute/unwrap it
-  const [currentAgent, setCurrentAgent] = createSignal<any>(null);
-
   let inputRef: any;
+  
+  let currentAgent: any = null;
 
   onMount(async () => {
     try {
@@ -60,24 +50,21 @@ function App() {
       await OpenFeature.setProviderAndWait(multiProvider);
 
       if (AGENT === "coding") {
-        const mod = await import("@sup/agents/coding-agent");
-        debugLog("[onMount] loaded coding-agent:", typeof mod.codingAgent);
-        setCurrentAgent(() => mod.codingAgent);
-        setCurrentModel(mod.codingAgentModelSpec);
+        const { codingAgent, codingAgentModelSpec } = await import("@sup/agents/coding-agent");
+        currentAgent = codingAgent;
+        // Extracted structural metadata details safely from imports
+        setCurrentModel(codingAgentModelSpec);
       } else {
-        const mod = await import("@sup/agents/support-agent");
-        debugLog("[onMount] loaded support-agent:", typeof mod.supportAgent);
-        setCurrentAgent(() => mod.supportAgent);
-        setCurrentModel(mod.supportAgentModelSpec?.name);
+        const { supportAgent, supportAgentModelSpec } = await import("@sup/agents/support-agent");
+        currentAgent = supportAgent;
+        setCurrentModel(supportAgentModelSpec?.name);
       }
 
       setReady(true);
       setTimeout(() => inputRef?.focus(), 0);
     } catch (e) {
-      debugLog("[onMount error]:", e);
       setCurrentModel("Fallback-LLM");
-      setReady(true);
-      setTimeout(() => inputRef?.focus(), 0);
+      setReady(true); 
     }
   });
 
@@ -87,16 +74,7 @@ function App() {
   };
 
   async function submit(text: string) {
-    debugLog("[submit] called with:", JSON.stringify(text));
-    const agentFn = currentAgent();
-    debugLog("[submit] state check -> empty:", !text.trim(), "busy:", busy(), "ready:", ready(), "hasAgent:", !!agentFn);
-
-    if (!text.trim() || busy() || !ready() || !agentFn) {
-      debugLog("[submit] BLOCKED");
-      return;
-    }
-
-    debugLog("[submit] EXECUTING");
+    if (!text.trim() || busy() || !ready() || !currentAgent) return;
     setBusy(true);
     setMessages((m) => [...m, { role: "user", text }]);
 
@@ -107,16 +85,13 @@ function App() {
         input: text,
       });
 
-      debugLog("[submit] instantiating generator with agentFn");
-      const generator = agentFn(text, session, {
+      const generator = currentAgent(text, session, {
         resolver: ProtocolResolver,
         tools: adapters,
       });
 
-      debugLog("[submit] starting runtime.run()");
       await runtime.run(() => generator, {
         onStep: (step) => {
-          debugLog("[runtime] onStep type:", step?.type);
           if (step.type === "text_delta" && step.delta) {
             setStreaming((s) => s + step.delta);
           } else if (step.type === "tool_call") {
@@ -133,7 +108,6 @@ function App() {
           }
         },
         onSpan: (span) => {
-          debugLog("[runtime] onSpan name:", span?.name);
           if (span.name === "reasoning") {
             setActiveTool(`reasoning: ${span.message}`);
           } else if (span.name === "tool") {
@@ -141,9 +115,7 @@ function App() {
           }
         },
       });
-      debugLog("[submit] runtime.run() completed successfully");
     } catch (err) {
-      debugLog("[submit error]:", err);
       setMessages((m) => [...m, { role: "agent", text: `Error: ${err}` }]);
     }
 
@@ -152,7 +124,7 @@ function App() {
 
   return (
     <box width="100%" height="100%" flexDirection="column" borderStyle="single" borderColor="dim">
-
+      
       {/* 1. Global App Header */}
       <box height={3} borderStyle="single" borderBottom width="100%" flexDirection="row" alignItems="center" paddingLeft={1} paddingRight={1}>
         <text bold color="magenta">SUP // </text>
@@ -162,10 +134,10 @@ function App() {
           {ready() ? "● ACTIVE CONTEXT" : "○ SYNCING ENVIRONMENT"}
         </text>
       </box>
-
+      
       {/* 2. Main Middle Deck (Splits layout horizontally) */}
       <box flexGrow={1} flexShrink={1} width="100%" flexDirection="row">
-
+        
         {/* Left Side: Scrollable Conversation Field */}
         <scrollbox flexGrow={1} flexShrink={1} height="100%" paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
           <For each={messages()}>
@@ -180,7 +152,7 @@ function App() {
               </box>
             )}
           </For>
-
+          
           {streaming() && (
             <box flexDirection="column" marginBottom={1} width="100%">
               <text bold color="green">❯ Agent</text>
@@ -192,28 +164,28 @@ function App() {
         </scrollbox>
 
         {/* Right Side: Sidebar Meta Deck Panel */}
-        <box
-          width={28}
-          height="100%"
-          flexDirection="column"
-          borderStyle="single"
-          borderLeft
-          paddingLeft={1}
+        <box 
+          width={28} 
+          height="100%" 
+          flexDirection="column" 
+          borderStyle="single" 
+          borderLeft 
+          paddingLeft={1} 
           paddingRight={1}
           paddingTop={1}
         >
           <text bold color="magenta" marginBottom={1}>[ AGENT SPEC ]</text>
-
+          
           <text color="gray">Type:</text>
           <text color="white" bold marginBottom={1}>{AGENT.toUpperCase()}</text>
-
+          
           <text color="gray">Engine Model:</text>
           <text color="cyan" wrap="wrap" marginBottom={1}>{currentModel()}</text>
-
+          
           <text color={busy() ? "yellow" : "green"} marginBottom={1}>
             {busy() ? "⚡ Processing" : "💤 Idle"}
           </text>
-
+          
           <text color="gray" marginTop={1}>Telemetry Log:</text>
           {activeTool() ? (
             <box flexDirection="column" marginTop={1}>
@@ -232,13 +204,8 @@ function App() {
         <input
           ref={inputRef}
           placeholder={!ready() ? "Warming infrastructure..." : busy() ? "Processing inference data..." : "Write context or query..."}
-          onSubmit={(val) => {
-            debugLog("[onSubmit triggered] val:", JSON.stringify(val));
-            if (inputRef && typeof inputRef.clear === 'function') {
-              inputRef.clear();
-            }
-            submit(val);
-          }}
+          disabled={busy() || !ready()}
+          onSubmit={submit}
           width="100%"
         />
       </box>
