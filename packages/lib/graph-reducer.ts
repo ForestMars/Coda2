@@ -84,9 +84,15 @@ export function rebuildGraph(
         }
         break;
 
+      case 'ASSISTANT_UPDATE':
+        // Assistant turns belong to the conversational projection, not the world graph.
+        break;
+
       case 'TOOL_RESULT':
         const { entityId, result } = event.payload;
-        graph.setNode(entityId, 'ENTITY', { ...result });
+        if (entityId) {
+          graph.setNode(entityId, 'ENTITY', { ...result });
+        }
 
         // If the tool fails, update the parent issue to reflect the conflict
         const issue = graph.findActiveIssue();
