@@ -66,8 +66,11 @@ function App() {
         setCurrentModel(mod.codingAgentModelSpec);
       } else {
         const mod = await import("@sup/agents/support-agent");
+        const resolvedConfig = await mod.resolveSupportAgentConfig();
         debugLog("[onMount] loaded support-agent:", typeof mod.supportAgent);
-        setCurrentAgent(() => mod.supportAgent);
+        setCurrentAgent(() => (input: string, session: AgentSession, options: any) =>
+          mod.supportAgent(input, session, { ...options, resolvedConfig }),
+        );
         setCurrentModel(mod.supportAgentModelSpec);
       }
 
