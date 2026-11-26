@@ -12,6 +12,7 @@ import {
 
 import { logger } from '@sup/infra/logger';
 import type { AgentStep } from '@sup/types/agent-types';
+import type { AgentSession } from '@sup/types/types';
 import { ProtocolResolver } from '@sup/lib/protocol-resolver';
 import { AgentRuntime } from '@sup/lib';
 import { adapters } from '@sup/tools';
@@ -68,9 +69,16 @@ export async function startChat() {
   }
 
   const rl = readline.createInterface({ input, output });
+  const sessionId = 'cli-session-' + Date.now();
   const session: AgentSession = {
-    id: 'cli-session-' + Date.now(),
+    id: sessionId,
+    sessionId,
+    userId: process.env.USER || 'local-user',
     events: [],
+    worldModel: {
+      unresolvedEntities: {},
+      lookupFailures: [],
+    },
   };
 
   console.log(` Active Agent: \\x1b[1m${AGENT.toUpperCase()}\\x1b[0m`);
