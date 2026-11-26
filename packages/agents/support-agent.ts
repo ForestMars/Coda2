@@ -290,9 +290,9 @@ export async function* supportAgent(
           'Use only the conversation and actual tool results supplied in the prompt.',
           'Do not invent facts or claim an action succeeded unless its result confirms success.',
           'Do not emit tool-call JSON or request another tool call. Respond in concise, natural language.',
-        ].join('\\n'),
+        ].join('\n'),
         temperature: opts?.resolvedConfig?.temperature ?? TEMPERATURE,
-        prompt: `${updatedHistory}\\n\\nSummarize the completed tool execution for the user.`,
+        prompt: `${updatedHistory}\n\nSummarize the completed tool execution for the user.`,
       });
 
       yield { type: 'final', timestamp: Date.now(), text: finalResponse.text };
