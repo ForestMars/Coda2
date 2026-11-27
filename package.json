@@ -25,7 +25,7 @@
     "cli:sup": "AGENT_TYPE=support bun --env-file=.env --env-file=.auth apps/cli/chat.ts",
     "sup": "AGENT_TYPE=support bun --env-file=.env --env-file=.auth apps/cli/chat.ts",
     "tui": "TUI_MODE=1 bun --env-file=.auth apps/tui/index.tsx",
-    "tui:debug": "AGENT_TYPE=coding bun --env-file=.auth apps/tui/index.tsx",
+    "tui:debug": "AGENT_TYPE=support bun --env-file=.auth apps/tui/index.tsx",
     "build": "bun run type-check && vite build",
     "build:ci": "bun run build && bun run test:ci",
     "build:dev": "vite build --mode development",
@@ -55,7 +55,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@bindable-ai/gate": "0.1.0",
+    "@bindable-ai/gate": "https://github.com/bindable-ai/gate/releases/download/v0.4.1/bindable-ai-gate-0.1.0.tgz",
     "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/server": "^2.0.0-beta.4",
     "@openfeature/core": "1.9.2",
