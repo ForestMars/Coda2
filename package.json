@@ -25,7 +25,7 @@
     "cli:sup": "AGENT_TYPE=support bun --env-file=.env --env-file=.auth apps/cli/chat.ts",
     "sup": "AGENT_TYPE=support bun --env-file=.env --env-file=.auth apps/cli/chat.ts",
     "tui": "TUI_MODE=1 bun --env-file=.auth apps/tui/index.tsx",
-    "tui:debug": "AGENT_TYPE=support bun --env-file=.auth apps/tui/index.tsx",
+    "tui:debug": "AGENT_TYPE=coding bun --env-file=.auth apps/tui/index.tsx",
     "build": "bun run type-check && vite build",
     "build:ci": "bun run build && bun run test:ci",
     "build:dev": "vite build --mode development",
