@@ -55,6 +55,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@bindable-ai/gate": "0.1.0",
     "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/server": "^2.0.0-beta.4",
     "@openfeature/core": "1.9.2",
