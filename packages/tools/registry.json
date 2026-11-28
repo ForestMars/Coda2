@@ -191,5 +191,15 @@
         "query"
       ]
     }
+  },
+  {
+    "name": "hello_world",
+    "description": "Returns a hello-world response to verify MCP tool discovery and execution.",
+    "importPath": "hello_world/index.ts",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
   }
 ]

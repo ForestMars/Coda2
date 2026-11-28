@@ -1,0 +1,12 @@
+# This Dockerfile uses the Coda2 repository root as its build context.
+# Only the standalone service runtime and its single enabled tool are copied.
+**
+!services
+!services/toolserver
+!services/toolserver/**
+!packages
+!packages/tools
+!packages/tools/mcpServer.ts
+!packages/tools/registry.json
+!packages/tools/hello_world
+!packages/tools/hello_world/**
