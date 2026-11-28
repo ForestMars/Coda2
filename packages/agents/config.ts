@@ -8,13 +8,13 @@ export const AGENT_CONFIG = {
   skillsPath: './agents/skills/'
 };
 
-
-export const CONTEXT_ANCHOR = `
-### STATE OVERRIDE: SESSION MEMORY
-1. **Source of Truth**: The CURRENT_KNOWLEDGE_GRAPH below is your primary memory.
-2. **Persistence**: If an Order, Entity, or ID (e.g., #999) is in the graph, it is currently in "active focus."
-3. **No Redundancy**: Do NOT ask the user for identifiers already present in the graph. 
-4. **Resolution**: If an entity is UNRESOLVED_CONFLICT, use the graph data to resolve it immediately.
-5. **Important** ACTIVE_FOCUS_ITEMS defines the authoritative entities for this turn.
-Do not ask for information that already exists in this section.
-`.trim();
+export const CONTEXT_ANCHOR = [
+  '### CONVERSATION MEMORY',
+  '1. The CURRENT_KNOWLEDGE_GRAPH is memory reconstructed from this conversation event history.',
+  '2. ACTIVE_CONTEXT_ITEMS contains entities or domain records already observed or explicitly recorded. It is context, not a request to act.',
+  '3. A SUPPORT_PROBLEM is a problem being investigated. It is not automatically a TICKET.',
+  '4. A TICKET is a help-desk record created only after the support-ticket qualification bar is met.',
+  "5. A PROJECT_ISSUE is a work item in a specific project's repository. It remains distinct from a TICKET even when the ticket queue uses GitHub as its backend.",
+  '6. Never infer that a ticket or project issue exists merely because a chat session began or a user described a problem.',
+  "7. Do not create or close tickets or project issues unless the user's request and the applicable workflow call for that specific action.",
+].join('\n');

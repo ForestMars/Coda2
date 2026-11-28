@@ -84,7 +84,7 @@
   },
   {
     "name": "github.closes_issue",
-    "description": "Closes an existing issue in a GitHub repository.",
+    "description": "Closes an existing project issue in the configured GitHub repository. Use only when the user explicitly asks to close that project issue.",
     "importPath": "github/close_issue/index.ts",
     "inputSchema": {
       "type": "object",
@@ -101,7 +101,7 @@
   },
   {
     "name": "github.comment_issue",
-    "description": "Adds a comment to an existing GitHub issue.",
+    "description": "Adds a comment to an existing project issue in the configured GitHub repository.",
     "importPath": "github/comment_issue/index.ts",
     "inputSchema": {
       "type": "object",
@@ -123,7 +123,7 @@
   },
   {
     "name": "github.create_issue",
-    "description": "Create a new GitHub issue in the configured repository. REQUIRED: title. OPTIONAL: body (description), labels (tags for the issue).",
+    "description": "Create a new project issue in the configured GitHub repository. This is for project work, not for creating a help-desk ticket. REQUIRED: title. OPTIONAL: body (description), labels (tags for the issue).",
     "importPath": "github/create_issue/index.ts",
     "inputSchema": {
       "type": "object",
@@ -151,7 +151,7 @@
   },
   {
     "name": "github.search_issues",
-    "description": "Search for GitHub issues in the repository.",
+    "description": "Search project issues in the configured GitHub repository.",
     "importPath": "github/search_issues/index.ts",
     "inputSchema": {
       "type": "object",
