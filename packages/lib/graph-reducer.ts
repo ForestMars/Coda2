@@ -23,15 +23,11 @@ export function rebuildGraph(
 
         const activeConflict = graph.findUnresolvedConflict();
         if (activeConflict) {
-          graph.setNode(
-            activeConflict.id,
-            activeConflict.type,
-            {
-              // Keep follow-up details with the entity that actually failed.
-              workingContext:
-                \`\${activeConflict.properties.workingContext || ''} | New Detail: \${text}\`.trim(),
-            },
-          );
+          const previousContext = String(activeConflict.properties.workingContext || '');
+          graph.setNode(activeConflict.id, activeConflict.type, {
+            // Keep follow-up details with the entity that actually failed.
+            workingContext: [previousContext, text].filter(Boolean).join(' | New Detail: '),
+          });
         }
 
         // Only retain an explicitly marked identifier. A user message does not
