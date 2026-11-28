@@ -66,13 +66,16 @@ export class MemoryGraph {
       activeNodes.forEach(n => {
         const state = n.properties.resolutionState ?? n.properties.status ?? 'ACTIVE';
         const context = n.properties.context ?? n.properties.workingContext ?? 'None';
-        out += \` - [\${n.type}] ID: \${n.id} | STATE: \${state} | CONTEXT: \${context}\n\`;
+        out += ' - [' + n.type + '] ID: ' + n.id +
+          ' | STATE: ' + state + ' | CONTEXT: ' + context + '\n';
       });
     }
 
     if (archivedNodes.length > 0) {
       out += '>> ARCHIVED_CONTEXT (RESOLVED):\n';
-      archivedNodes.forEach(n => out += \` - [\${n.type}] ID: \${n.id}: RESOLVED\n\`);
+      archivedNodes.forEach(n => {
+        out += ' - [' + n.type + '] ID: ' + n.id + ': RESOLVED\n';
+      });
     }
 
     return out;
