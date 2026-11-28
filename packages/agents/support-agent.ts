@@ -130,6 +130,15 @@ export async function* supportAgent(
   const worldModel = rebuildGraph(session.events);
   const graphContext = worldModel.serialize();
 
+  if (process.env.CODA_DEBUG_GRAPH === 'true') {
+    logger.info({
+      sessionId: session.id,
+      eventCount: session.events.length,
+      nodes: Array.from(worldModel.nodes.values()),
+      serialized: graphContext,
+    }, 'Memory graph after turn update');
+  }
+
   // Use the central brain we built to decide how to act.
   const protocol = opts?.resolver?.resolve(graphContext) ?? { key: 'default', name: 'General Support', skillPath: '', tools: [], systemPrompt: '' };
 
@@ -152,9 +161,9 @@ export async function* supportAgent(
     protocol.systemPrompt,  // What to do RIGHT NOW — close to the data it governs
     CONTEXT_ANCHOR,         // How to interpret what follows
     '### CURRENT KNOWLEDGE_GRAPH\n' +
-    'The following represents your memory of this conversation. ' +
-    'All entity IDs and states here are established facts — ' +
-    'do NOT ask the user to re-provide information already present here.\n',
+    'The following represents memory reconstructed from this conversation\'s event history. ' +
+    'Only records explicitly present in the event history are facts; ' +
+    'a session or message does not imply a ticket or project issue.\n',
     graphContext,           // The World Model — last thing read, most salient
   ].filter(Boolean).join('\n\n');
 
