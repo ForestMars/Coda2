@@ -18,86 +18,60 @@ export function rebuildGraph(
 
   for (const event of events) {
     switch (event.type) {
-      case 'USER_UPDATE':
+      case 'USER_UPDATE': {
         const text = event.payload.text;
-        const activeConflict = Array.from(
-          graph.nodes.values(),
-        ).find(
-          (n) =>
-            n.properties.resolutionState ===
-            'UNRESOLVED_CONFLICT',
-        );
 
+        const activeConflict = graph.findUnresolvedConflict();
         if (activeConflict) {
           graph.setNode(
             activeConflict.id,
             activeConflict.type,
             {
-              // Append the new input directly to the entity that is currently "broken"
+              // Keep follow-up details with the entity that actually failed.
               workingContext:
-                `${activeConflict.properties.workingContext || ''} | New Detail: ${text}`.trim(),
+                \`\${activeConflict.properties.workingContext || ''} | New Detail: \${text}\`.trim(),
             },
           );
         }
 
-        // 1. Ensure a Root Issue exists
-        let activeIssue = graph.findActiveIssue();
-        if (!activeIssue) {
-          const issueId = 'current_session_issue';
-          graph.setNode(issueId, 'ISSUE', {
-            status: 'OPEN',
-            resolution: 'UNRESOLVED',
-          });
-          activeIssue = graph.nodes.get(issueId);
-        }
-
-        // 2. Extract Entities and PARENT them to the Issue
-        const idMatch = text.match(/#?(\d{3,})/);
+        // Only retain an explicitly marked identifier. A user message does not
+        // create a support ticket or a project issue.
+        const idMatch = text.match(/#(\d{3,})\b/);
         if (idMatch) {
           const entityId = idMatch[1];
           graph.setNode(entityId, 'ENTITY', {
             id: entityId,
           });
-          graph.addEdge(activeIssue!.id, entityId);
         }
 
-        // 3. Update the Issue's working context (Sticky Memory)
-        const currentContext =
-          activeIssue!.properties.context || '';
-        graph.setNode(activeIssue!.id, 'ISSUE', {
-          context:
-            `${currentContext} | User added: "${text}"`.trim(),
-        });
-
-        // 4. Handle Closing Signal
-        if (
-          text
-            .toLowerCase()
-            .match(
-              /(thank you|thanks|resolved|that is all)/,
-            )
-        ) {
-          graph.setNode(activeIssue!.id, 'ISSUE', {
-            status: 'CLOSED',
-            resolution: 'SATISFIED',
-          });
-        }
+        // Generic conversational language ("thanks", "resolved", etc.) does
+        // not close a ticket or project issue. Those are explicit domain actions.
         break;
+      }
 
-      case 'TOOL_RESULT':
+      case 'TOOL_RESULT': {
         const { entityId, result } = event.payload;
-        graph.setNode(entityId, 'ENTITY', { ...result });
 
-        // If the tool fails, update the parent issue to reflect the conflict
-        const issue = graph.findActiveIssue();
-        if (issue && result.status === 'Not Found') {
-          graph.setNode(issue.id, 'ISSUE', {
-            resolution: 'CONFLICT_WAITING_FOR_USER_INFO',
-            failedAttemptId: entityId,
+        // Older or non-entity tool events may not identify an entity.
+        // Do not create a graph node with an undefined ID.
+        if (!entityId) break;
+
+        const resultProperties =
+          result && typeof result === 'object' && !Array.isArray(result)
+            ? result
+            : { result };
+
+        graph.setNode(entityId, 'ENTITY', resultProperties);
+
+        if (result?.status === 'Not Found') {
+          graph.setNode(entityId, 'ENTITY', {
+            resolutionState: 'UNRESOLVED_CONFLICT',
           });
         }
         break;
+      }
     }
   }
+
   return graph;
 }
