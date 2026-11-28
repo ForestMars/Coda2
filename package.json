@@ -48,8 +48,7 @@
     "clean:nuke": "find . -type f \\( -name '*.js' -o -name '*.d.ts' -o -name '*.d.ts.map' -o -name '*.js.map' -o -name '*.tsbuildinfo' \\) -not -path '*/node_modules/*' -delete && find . -name 'dist' -type d -prune -exec rm -rf {} +",
     "reinstall": "bun pm cache rm && rm -rf node_modules && bun install",
     "rebuild": "bun run clean:dist && bun run clean:tsbuildinfo && bun tsc --build --force",
-    "tui:coda": "TUI_MODE=1 AGENT=coding bun --env-file=.auth apps/tui/index.tsx",
-    "cli:debug": "NODE_ENV=development LOG_LEVEL=debug bun apps/cli/chat.ts"
+    "tui:coda": "TUI_MODE=1 AGENT=coding bun --env-file=.auth apps/tui/index.tsx"
   },
   "keywords": [],
   "author": "",
