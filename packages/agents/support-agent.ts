@@ -7,7 +7,7 @@
 
 import { generateText, jsonSchema } from 'ai';
 import { ollama } from 'ai-sdk-ollama';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -175,6 +175,37 @@ export async function* supportAgent(
   const fullPrompt = conversationHistory
     ? `${conversationHistory}\nUser: ${userInput}`
     : userInput;
+
+  // Capture the exact assembled prompt and equivalent native Ollama request
+  // for an isolated reproduction. This does not execute returned tool calls.
+  if (process.env.CODA_DEBUG_PROMPT === 'true') {
+    const ollamaTools = filterToolsForAgent(registry, 'support').map((tool) => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.inputSchema,
+      },
+    }));
+
+    const directOllamaRequest = {
+      model: supportAgentConfig.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: 'hi' },
+      ],
+      tools: ollamaTools,
+      stream: false,
+      options: { temperature: supportAgentConfig.temperature },
+    };
+
+    writeFileSync(
+      '/tmp/coda2-ollama-hi.json',
+      JSON.stringify(directOllamaRequest, null, 2),
+    );
+    writeFileSync('/tmp/coda2-system-prompt.txt', systemPrompt);
+    writeFileSync('/tmp/coda2-full-prompt.txt', fullPrompt);
+  }
 
  /**
  * Executes generative request and logs precise inference metrics.
