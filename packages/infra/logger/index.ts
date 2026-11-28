@@ -16,6 +16,7 @@ export const pinoStorage = new AsyncLocalStorage<
 const MODEL_NAME = AGENT_MODEL
 const isTerminal = process.stdout.isTTY && !process.env.TUI_MODE;
 const isDev = process.env.NODE_ENV !== 'production';
+const debugMode = process.env.MODE === 'debug';
 const lokiEnabled = process.env.LOKI_ENABLED === 'true';
 
 const streams: pino.StreamEntry[] = [];
@@ -26,7 +27,7 @@ const lokiStream = await pinoLoki({
   batching: { interval: 5 } as any, // Bypassing outdated v1 types; v2 runtime supports object configuration.
 });
 
-if (isTerminal && isDev) {
+if (isTerminal && (isDev || debugMode)) {
   const pretty = require('pino-pretty')({
     colorize: true,
     levelFirst: true,
@@ -35,6 +36,10 @@ if (isTerminal && isDev) {
     ignore: 'pid,hostname',
   });
   streams.push({ stream: pretty, level: 'debug' });
+} else if (debugMode) {
+  // Explicit debug mode remains visible in piped and TUI runs without
+  // mixing structured logs into stdout (which may carry user-facing output).
+  streams.push({ stream: pino.destination(2), level: 'debug' });
 } else {
   streams.push({
     stream: pino.destination('/dev/null'),
@@ -49,7 +54,7 @@ if (lokiEnabled) {
 const loggerInstance = pino(
   {
     // level: isDev ? 'debug' : 'info',
-    level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
+    level: debugMode ? 'debug' : (process.env.LOG_LEVEL || (isDev ? 'debug' : 'info')),
     base: { model: MODEL_NAME, runtime: 'bun' },
   },
   pino.multistream(streams),
