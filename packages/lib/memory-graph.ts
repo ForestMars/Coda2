@@ -1,20 +1,31 @@
 /**
  * @file memory-graph.ts
  * @description In-Memory Graph Representation for Agent's World Model.
+ *
+ * Tickets and project issues are distinct domain records. The graph may
+ * represent either when an explicit event records one; a chat message alone
+ * never synthesizes either record.
  */
+
+export type GraphNodeType =
+  | 'ENTITY'
+  | 'USER_METADATA'
+  | 'SUPPORT_PROBLEM'
+  | 'TICKET'
+  | 'PROJECT_ISSUE';
 
 export interface GraphNode {
   id: string;
-  type: 'ISSUE' | 'ENTITY' | 'USER_METADATA';
+  type: GraphNodeType;
   properties: Record<string, any>;
-  edges: string[]; 
+  edges: string[];
   lastTouched: number;
 }
 
 export class MemoryGraph {
   public nodes: Map<string, GraphNode> = new Map();
 
-  setNode(id: string, type: GraphNode['type'], properties: Record<string, any> = {}) {
+  setNode(id: string, type: GraphNodeType, properties: Record<string, any> = {}) {
     const existing = this.nodes.get(id);
     this.nodes.set(id, {
       id,
@@ -32,9 +43,9 @@ export class MemoryGraph {
     }
   }
 
-  findActiveIssue(): GraphNode | undefined {
+  findUnresolvedConflict(): GraphNode | undefined {
     return Array.from(this.nodes.values())
-      .find(n => n.type === 'ISSUE' && n.properties.status === 'OPEN');
+      .find(n => n.properties.resolutionState === 'UNRESOLVED_CONFLICT');
   }
 
   findMostRecentEntity(): GraphNode | undefined {
@@ -47,22 +58,23 @@ export class MemoryGraph {
     let out = '### KNOWLEDGE_GRAPH_STATE\n';
     const nodes = Array.from(this.nodes.values());
 
-    // Separate active issues from archived history
     const activeNodes = nodes.filter(n => n.properties.resolutionState !== 'RESOLVED');
     const archivedNodes = nodes.filter(n => n.properties.resolutionState === 'RESOLVED');
 
     if (activeNodes.length > 0) {
-      out += '>> ACTIVE_FOCUS_ITEMS:\n';
+      out += '>> ACTIVE_CONTEXT_ITEMS:\n';
       activeNodes.forEach(n => {
-        out += ` - [${n.type}] ID: ${n.id} | STATE: ${n.properties.resolutionState} | CONTEXT: ${n.properties.context || 'None'}\n`;
+        const state = n.properties.resolutionState ?? n.properties.status ?? 'ACTIVE';
+        const context = n.properties.context ?? n.properties.workingContext ?? 'None';
+        out += \` - [\${n.type}] ID: \${n.id} | STATE: \${state} | CONTEXT: \${context}\n\`;
       });
     }
 
     if (archivedNodes.length > 0) {
-      out += '>> ARCHIVED_HISTORY (DO NOT RE-OPEN):\n';
-      archivedNodes.forEach(n => out += ` - ${n.type} ${n.id}: RESOLVED\n`);
+      out += '>> ARCHIVED_CONTEXT (RESOLVED):\n';
+      archivedNodes.forEach(n => out += \` - [\${n.type}] ID: \${n.id}: RESOLVED\n\`);
     }
-  
-  return out;
-}
+
+    return out;
+  }
 }
